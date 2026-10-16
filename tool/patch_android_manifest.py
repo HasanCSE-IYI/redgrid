@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Android বিল্ড ও কনফিগারেশন প্যাচ টুল:
 1. Android 11+ এ tel: কল কাজ করার জন্য AndroidManifest.xml এ <queries> যোগ করে।
-2. flutter_plugin_android_lifecycle / file_picker ইত্যাদিতে compileSdk 36 ও CheckAarMetadata সমাধান করে।
-3. Groovy (.gradle) এবং Kotlin DSL (.gradle.kts) উভয় ফরম্যাট সমর্থন করে।
-4. local.properties এবং settings.gradle / settings.gradle.kts কনফিগারেশন আপডেট করে।
+2. flutter_plugin_android_lifecycle / file_picker ইত্যাদিতে compileSdk 36 সমাধান করতে
+   .pub-cache এর প্লাগিনসমূহ এবং app build.gradle-কে compileSdk 36 এ আপডেট করে।
+3. local.properties কনফিগারেশন আপডেট করে।
 একাধিকবার চালালেও নিরাপদ (idempotent)।"""
+import os
 import pathlib
 import re
+import subprocess
 import sys
 
 ANDROID_DIR = pathlib.Path("android")
@@ -17,50 +19,6 @@ INTENT = """    <intent>
         <action android:name="android.intent.action.DIAL" />
         <data android:scheme="tel" />
     </intent>
-"""
-
-GROOVY_SUBPROJECTS_HOOK = """
-// RedGrid patch: Disable CheckAarMetadata on plugins
-subprojects { project ->
-    project.tasks.configureEach { task ->
-        if (task.name.contains("AarMetadata")) {
-            task.enabled = false
-        }
-    }
-}
-"""
-
-KOTLIN_SUBPROJECTS_HOOK = """
-// RedGrid patch: Disable CheckAarMetadata on plugins
-subprojects {
-    tasks.configureEach {
-        if (name.contains("AarMetadata")) {
-            enabled = false
-        }
-    }
-}
-"""
-
-SETTINGS_KOTLIN_HOOK = """
-// RedGrid patch: Disable CheckAarMetadata globally
-gradle.afterProject {
-    tasks.configureEach {
-        if (name.contains("AarMetadata")) {
-            enabled = false
-        }
-    }
-}
-"""
-
-SETTINGS_GROOVY_HOOK = """
-// RedGrid patch: Disable CheckAarMetadata globally
-gradle.afterProject { project ->
-    project.tasks.configureEach { task ->
-        if (task.name.contains("AarMetadata")) {
-            task.enabled = false
-        }
-    }
-}
 """
 
 
@@ -138,73 +96,54 @@ def patch_app_gradle() -> None:
             print("android/app/build.gradle.kts already configured")
 
 
-def patch_root_gradle() -> None:
-    # 1. Groovy: android/build.gradle
-    root_groovy = pathlib.Path("android/build.gradle")
-    if root_groovy.exists():
-        text = root_groovy.read_text(encoding="utf-8")
-        if "AarMetadata" not in text:
-            text += GROOVY_SUBPROJECTS_HOOK
-            root_groovy.write_text(text, encoding="utf-8")
-            print("android/build.gradle patched with AarMetadata bypass hook")
-        else:
-            print("android/build.gradle already patched")
+def patch_pub_cache() -> None:
+    # Run flutter pub get first if flutter is available so packages exist in pub-cache
+    try:
+        subprocess.run(["flutter", "pub", "get"], check=False)
+    except Exception:
+        pass
 
-    # 2. Kotlin DSL: android/build.gradle.kts
-    root_kts = pathlib.Path("android/build.gradle.kts")
-    if root_kts.exists():
-        text = root_kts.read_text(encoding="utf-8")
-        if "AarMetadata" not in text:
-            text += KOTLIN_SUBPROJECTS_HOOK
-            root_kts.write_text(text, encoding="utf-8")
-            print("android/build.gradle.kts patched with AarMetadata bypass hook")
-        else:
-            print("android/build.gradle.kts already patched")
+    cache_dirs = []
+    if "PUB_CACHE" in os.environ:
+        cache_dirs.append(pathlib.Path(os.environ["PUB_CACHE"]))
+    cache_dirs.append(pathlib.Path.home() / ".pub-cache")
 
+    def bump_sdk(match):
+        val = int(match.group(2))
+        return f"{match.group(1)}{max(val, 36)}"
 
-def patch_settings_gradle() -> None:
-    # 1. Kotlin DSL: android/settings.gradle.kts
-    settings_kts = pathlib.Path("android/settings.gradle.kts")
-    if settings_kts.exists():
-        text = settings_kts.read_text(encoding="utf-8")
-        if "AarMetadata" not in text:
-            text += SETTINGS_KOTLIN_HOOK
-            settings_kts.write_text(text, encoding="utf-8")
-            print("android/settings.gradle.kts patched with global AarMetadata bypass")
-        else:
-            print("android/settings.gradle.kts already patched")
-
-    # 2. Groovy: android/settings.gradle
-    settings_groovy = pathlib.Path("android/settings.gradle")
-    if settings_groovy.exists():
-        text = settings_groovy.read_text(encoding="utf-8")
-        if "AarMetadata" not in text:
-            text += SETTINGS_GROOVY_HOOK
-            settings_groovy.write_text(text, encoding="utf-8")
-            print("android/settings.gradle patched with global AarMetadata bypass")
-        else:
-            print("android/settings.gradle already patched")
-
-
-def print_android_structure() -> None:
-    if ANDROID_DIR.exists():
-        files = [str(p) for p in ANDROID_DIR.rglob("*") if p.is_file()]
-        print(f"Android directory files ({len(files)} files found):")
-        for f in sorted(files)[:20]:
-            print(f"  {f}")
-        if len(files) > 20:
-            print(f"  ... and {len(files) - 20} more files")
-    else:
-        print("android directory does not exist yet (local dev environment)")
+    patched_count = 0
+    for c_dir in cache_dirs:
+        if not c_dir.exists():
+            continue
+        for gradle_file in c_dir.rglob("*build.gradle*"):
+            try:
+                text = gradle_file.read_text(encoding="utf-8")
+                orig = text
+                text = re.sub(r'(compileSdkVersion\s+)([0-9]+)', bump_sdk, text)
+                text = re.sub(r'(compileSdk\s*=\s*)([0-9]+)', bump_sdk, text)
+                text = re.sub(
+                    r'(compileSdkVersion\s*\(\s*)([0-9]+)(\s*\))',
+                    lambda m: f"{m.group(1)}{max(int(m.group(2)), 36)}{m.group(3)}",
+                    text,
+                )
+                text = re.sub(r'compileSdkVersion\s+flutter\.compileSdkVersion', 'compileSdkVersion 36', text)
+                text = re.sub(r'compileSdk\s*=\s*flutter\.compileSdkVersion', 'compileSdk = 36', text)
+                if text != orig:
+                    gradle_file.write_text(text, encoding="utf-8")
+                    pkg_name = gradle_file.parent.parent.name if gradle_file.parent.name == "android" else gradle_file.parent.name
+                    print(f"Patched {pkg_name}/{gradle_file.name} compileSdk to 36")
+                    patched_count += 1
+            except Exception:
+                pass
+    print(f"Total pub-cache plugins patched to compileSdk 36: {patched_count}")
 
 
 def main() -> int:
-    print_android_structure()
     manifest_ok = patch_manifest()
     patch_local_properties()
     patch_app_gradle()
-    patch_root_gradle()
-    patch_settings_gradle()
+    patch_pub_cache()
     if not ANDROID_DIR.exists():
         return 0
     return 0 if manifest_ok else 1
