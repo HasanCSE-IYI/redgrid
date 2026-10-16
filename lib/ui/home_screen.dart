@@ -58,13 +58,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         showAboutDialog(
           context: context,
           applicationName: Strings.appTitle,
-          applicationIcon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: kCrimson.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
+          applicationIcon: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              'assets/icon/app_icon.png',
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
             ),
-            child: const Icon(Icons.bloodtype, color: kCrimson, size: 32),
           ),
           children: const [Text(Strings.aboutBody)],
         );
@@ -88,13 +89,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: kCrimson.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Image.asset(
+                'assets/icon/app_icon.png',
+                width: 26,
+                height: 26,
+                fit: BoxFit.cover,
               ),
-              child: const Icon(Icons.bloodtype, color: kCrimson, size: 22),
             ),
             const SizedBox(width: 8),
             Text(
