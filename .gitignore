@@ -1,0 +1,25 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+pubspec.lock
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+
+# IDE / OS / PocketDev
+.idea/
+.vscode/
+*.iml
+.DS_Store
+.pocketdev/
+__pycache__/
+*.pyc
