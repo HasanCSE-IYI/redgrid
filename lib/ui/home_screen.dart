@@ -24,12 +24,19 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _debounce;
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -140,6 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     // সারাংশ পরিসংখ্যান ব্যানার
                     statsAsync.when(
+                      skipLoadingOnReload: true,
                       data: (stats) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Container(
@@ -229,6 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
                     TextField(
+                      controller: _searchController,
                       onChanged: _onQueryChanged,
                       textInputAction: TextInputAction.search,
                       decoration: const InputDecoration(
@@ -318,6 +327,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             ...donors.when<List<Widget>>(
+              skipLoadingOnReload: true,
               loading: () => [
                 const SliverFillRemaining(
                   hasScrollBody: false,

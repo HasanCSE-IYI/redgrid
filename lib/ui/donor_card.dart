@@ -152,8 +152,8 @@ class _DonorCardState extends ConsumerState<DonorCard> {
   Widget build(BuildContext context) {
     final donor = widget.donor;
     final theme = Theme.of(context);
-    final filter = ref.watch(filterProvider);
-    final isCompatibleMatch = filter.bloodGroup != null && filter.bloodGroup != donor.bloodGroup;
+    final selectedBloodGroup = ref.watch(filterProvider.select((f) => f.bloodGroup));
+    final isCompatibleMatch = selectedBloodGroup != null && selectedBloodGroup != donor.bloodGroup;
     final milestone = DonorMilestone.forCount(donor.totalDonations);
 
     final result = Eligibility.check(

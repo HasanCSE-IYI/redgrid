@@ -46,32 +46,41 @@ class DonorListNotifier extends AsyncNotifier<List<Donor>> {
   Future<void> add(Donor donor) async {
     await _repo.insert(donor);
     ref.invalidateSelf();
+    ref.invalidate(donorStatsProvider);
   }
 
   Future<void> edit(Donor donor) async {
     await _repo.update(donor);
     ref.invalidateSelf();
+    ref.invalidate(donorStatsProvider);
   }
 
   Future<void> remove(int id) async {
     await _repo.delete(id);
     ref.invalidateSelf();
+    ref.invalidate(donorStatsProvider);
   }
 
   Future<MarkDonatedResult> markDonated(int donorId, String date) async {
     final result = await _repo.markDonated(donorId, date);
     ref.invalidateSelf();
+    ref.invalidate(donorStatsProvider);
+    ref.invalidate(donationDatesProvider(donorId));
     return result;
   }
 
   Future<void> undo(int donorId, String date, String? previousLastDate) async {
     await _repo.undoDonation(donorId, date, previousLastDate);
     ref.invalidateSelf();
+    ref.invalidate(donorStatsProvider);
+    ref.invalidate(donationDatesProvider(donorId));
   }
 
   Future<void> deleteDonationDate(int donorId, String date) async {
     await _repo.deleteDonationDate(donorId, date);
     ref.invalidateSelf();
+    ref.invalidate(donorStatsProvider);
+    ref.invalidate(donationDatesProvider(donorId));
   }
 }
 
@@ -79,13 +88,11 @@ final donorListProvider =
     AsyncNotifierProvider<DonorListNotifier, List<Donor>>(DonorListNotifier.new);
 
 final donorStatsProvider = FutureProvider.autoDispose<DonorStats>((ref) async {
-  ref.watch(donorListProvider);
   return ref.watch(donorRepositoryProvider).getStats();
 });
 
 final donationDatesProvider =
     FutureProvider.autoDispose.family<List<String>, int>((ref, donorId) async {
-  ref.watch(donorListProvider);
   return ref.watch(donorRepositoryProvider).getDonationDates(donorId);
 });
 

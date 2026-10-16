@@ -78,6 +78,7 @@ Future<void> restoreBackup(BuildContext context, WidgetRef ref) async {
 
     await service.restore(data);
     ref.invalidate(donorListProvider);
+    ref.invalidate(donorStatsProvider);
     messenger.showSnackBar(const SnackBar(content: Text(Strings.restoreDone)));
   } on BackupException catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(e.message)));

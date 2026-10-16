@@ -323,6 +323,7 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
           ),
           Expanded(
             child: historyAsync.when(
+              skipLoadingOnReload: true,
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (_, __) => const Center(child: Text(Strings.errorLoad)),
               data: (dates) {
