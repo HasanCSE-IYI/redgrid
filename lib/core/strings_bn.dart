@@ -4,7 +4,7 @@ import 'digits.dart';
 class Strings {
   Strings._();
 
-  static const appTitle = 'রেডগ্রিড';
+  static const appTitle = 'RedGrid';
   static const disclaimer =
       'এই অ্যাপ রক্তদাতা খুঁজে পেতে সাহায্য করে; চিকিৎসা সংক্রান্ত সিদ্ধান্ত হাসপাতালের।';
 
@@ -87,7 +87,7 @@ class Strings {
   static const findEligibleDonors = 'ডোনার খুঁজুন';
   static const postCopied = 'আবেদনের লেখা কপি করা হয়েছে';
   static const broadcastHeader = '🚨 #জরুরি_রক্তের_প্রয়োজন 🚨';
-  static const broadcastFooter = '(রেডগ্রিড - লাইফসেভার অফলাইন ডিরেক্টরি)';
+  static const broadcastFooter = '(RedGrid - লাইফসেভার অফলাইন ডিরেক্টরি)';
 
   // হোম ড্যাশবোর্ড পরিসংখ্যান (Summary Stats)
   static const totalDonors = 'মোট ডোনার';
@@ -115,17 +115,17 @@ class Strings {
   static const restore = 'রিস্টোর';
   static const about = 'সম্পর্কে';
   static const aboutBody =
-      'রেডগ্রিড ইন্টারনেট ছাড়াই রক্তদাতার তালিকা রাখে। সব তথ্য শুধু এই ফোনে থাকে।';
+      'RedGrid ইন্টারনেট ছাড়াই রক্তদাতার তালিকা রাখে। সব তথ্য শুধু এই ফোনে থাকে।';
   static const backupWarning =
       'ব্যাকআপ ফাইল এনক্রিপ্টেড নয় এবং এতে সবার ফোন নম্বর আছে। ফাইলটি নিরাপদ রাখুন।';
-  static const backupShareText = 'রেডগ্রিড ব্যাকআপ (এনক্রিপ্টেড নয়, নিরাপদ রাখুন)';
+  static const backupShareText = 'RedGrid ব্যাকআপ (এনক্রিপ্টেড নয়, নিরাপদ রাখুন)';
   static const continueLabel = 'এগিয়ে যান';
   static const restoreTitle = 'রিস্টোর নিশ্চিত করুন';
   static String restoreBody(String donors, String logs) =>
       'ফাইলে $donors জন ডোনার ও $logs টি রক্তদানের লগ আছে। বর্তমান সব তথ্য এগুলো দিয়ে প্রতিস্থাপিত হবে। '
       'আগে স্বয়ংক্রিয়ভাবে বর্তমান তথ্যের একটি কপি রাখা হবে।';
   static const restoreDone = 'রিস্টোর সম্পন্ন হয়েছে';
-  static const restoreBadFile = 'ফাইলটি সঠিক রেডগ্রিড ব্যাকআপ নয়';
+  static const restoreBadFile = 'ফাইলটি সঠিক RedGrid ব্যাকআপ নয়';
   static const restoreNewerVersion = 'ফাইলটি অ্যাপের নতুন সংস্করণের; অ্যাপ আপডেট করুন';
   static String restoreBadRow(String detail) => 'ব্যাকআপের তথ্যে ভুল আছে: $detail';
 

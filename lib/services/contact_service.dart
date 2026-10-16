@@ -23,7 +23,7 @@ class ContactService {
   }) {
     final buffer = StringBuffer();
     buffer.writeln('আসসালামু আলাইকুম/নমস্কার $donorName,');
-    buffer.writeln('রেডগ্রিড থেকে জরুরি রক্তের প্রয়োজনে যোগাযোগ করছি। আপনার রক্তের গ্রুপ $bloodGroup।');
+    buffer.writeln('RedGrid থেকে জরুরি রক্তের প্রয়োজনে যোগাযোগ করছি। আপনার রক্তের গ্রুপ $bloodGroup।');
     if (patientHospital != null && patientHospital.trim().isNotEmpty) {
       buffer.writeln('হাসপাতাল / স্থান: ${patientHospital.trim()}');
     }

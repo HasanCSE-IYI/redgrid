@@ -50,6 +50,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         showAboutDialog(
           context: context,
           applicationName: Strings.appTitle,
+          applicationIcon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: kCrimson.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.bloodtype, color: kCrimson, size: 32),
+          ),
           children: const [Text(Strings.aboutBody)],
         );
     }
@@ -69,7 +77,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(Strings.appTitle),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: kCrimson.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.bloodtype, color: kCrimson, size: 22),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              Strings.appTitle,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: theme.brightness == Brightness.dark
+                    ? const Color(0xFFFF5252)
+                    : kCrimson,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: Strings.emergencyRequest,

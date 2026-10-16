@@ -231,7 +231,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                 FilledButton.icon(
                   onPressed: _findMatchingDonors,
                   icon: const Icon(Icons.search),
-                  label: Text('রেডগ্রিডে $_selectedGroup এর প্রস্তুত ডোনার খুঁজুন'),
+                  label: Text('RedGrid-এ $_selectedGroup এর প্রস্তুত ডোনার খুঁজুন'),
                   style: FilledButton.styleFrom(
                     backgroundColor: kCrimson,
                     foregroundColor: Colors.white,
