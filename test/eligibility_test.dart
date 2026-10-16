@@ -23,7 +23,7 @@ void main() {
           gender: AppConstants.genderMale, lastDonationDate: daysAgo(89), today: today);
       expect(r.eligible, isFalse);
       expect(r.daysLeft, 1);
-      expect(r.nextEligibleDate, today);
+      expect(r.nextEligibleDate, today.add(const Duration(days: 1)));
     });
   });
 
