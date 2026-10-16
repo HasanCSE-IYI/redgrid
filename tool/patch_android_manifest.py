@@ -73,14 +73,13 @@ def patch_file(p: pathlib.Path) -> bool:
             val = int(match.group(2))
             return f"{match.group(1)}{max(val, 36)}"
 
-        # 1. Numeric compileSdk / compileSdkVersion: e.g. compileSdk 34, compileSdkVersion 34, compileSdk = 34, compileSdk(34)
-        text = re.sub(r'(compileSdk(?:Version)?\s*=?\s*\(?\s*)([0-9]+)', bump_sdk, text)
+        # 1. Direct replacement of flutter.compileSdkVersion and flutter.targetSdkVersion
+        text = re.sub(r'flutter\.compileSdkVersion', '36', text)
+        text = re.sub(r'flutter\.targetSdkVersion', '36', text)
 
-        # 2. Dynamic flutter.compileSdkVersion references
-        text = re.sub(r'compileSdk(?:Version)?\s*=?\s*\(?\s*flutter\.compileSdkVersion\s*\)?', 'compileSdk = 36', text)
-
-        # 3. Dynamic flutter.targetSdkVersion references
-        text = re.sub(r'targetSdk(?:Version)?\s*=?\s*\(?\s*flutter\.targetSdkVersion\s*\)?', 'targetSdk = 36', text)
+        # 2. Numeric compileSdk / compileSdkVersion (e.g. compileSdk 34, compileSdkVersion 34, compileSdk = 34, compileSdk(34))
+        # Use [ \t]* so newlines are never consumed
+        text = re.sub(r'(\bcompileSdk(?:Version)?[ \t]*=?[ \t]*\(?[ \t]*)([0-9]+)', bump_sdk, text)
 
         if text != orig:
             p.write_text(text, encoding="utf-8")
