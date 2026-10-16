@@ -1,49 +1,49 @@
-# রেডগ্রিড (RedGrid) - অফলাইন রক্তদাতা ডিরেক্টরি
+# RedGrid - Offline Blood Donor Directory
 
-ইন্টারনেট ছাড়া শতভাগ অফলাইনে চলা লাইফসেভার রক্তদাতা ডিরেক্টরি।  
-প্রযুক্তি: **Flutter (Material 3) + Riverpod + SQLite (sqflite)**
-
----
-
-## 🩸 প্রধান ও জীবনরক্ষাকারী সুবিধাসমূহ
-
-1. **রক্তের গ্রুপ সামঞ্জস্যতা (Smart Compatibility Matching)**:
-   - চিকিৎসা বিজ্ঞানসম্মত লোহিত রক্তকণিকা সঞ্চালন নিয়মাবলি অনুযায়ী স্বয়ংক্রিয় সামঞ্জস্যপূর্ণ রক্তের গ্রুপের ডোনার ফিল্টারিং (যেমন: $A^+$ গ্রহীতার জন্য $A^+, A^-, O^+, O^-$)।
-   - মূল গ্রুপের সাথে হুবহু মিল (Exact Match) ডোনারদের প্রথমে অগ্রাধিকার দিয়ে তালিকা প্রদর্শন।
-   - বোম্বে ব্লাড গ্রুপ ($Oh$) সহ সর্বমোট ৯টি গ্রুপের নির্ভুল ম্যাপিং।
-
-2. **সরাসরি যোগাযোগ (Direct WhatsApp & SMS Integration)**:
-   - জরুরি প্রয়োজনে ডোনারদের সাথে এক ক্লিকে কল, সরাসরি হোয়াটসঅ্যাপ চ্যাট কিংবা এসএমএস পাঠানোর সুবিধা।
-   - পূর্বে প্রস্তুতকৃত মার্জিত ও বিনম্র বাংলা বার্তা টেমপ্লেট।
-   - অ্যাপ ইনস্টল না থাকলে স্বয়ংক্রিয়ভাবে ক্লিপবোর্ডে কপি ও ইউজার নোটিফিকেশন ফলব্যাক।
-
-3. **জরুরি রক্তের আবেদন ও সোশ্যাল মিডিয়া পোস্ট ফরমেটার**:
-   - হাসপাতাল/স্থান, রক্তের গ্রুপ, পরিমাণ, সময় ও যোগাযোগের নম্বর দিয়ে সুন্দর ও সুসংগঠিত বাংলা পোস্ট তৈরি।
-   - এক ক্লিকে পোস্ট কপি বা যেকোনো সোশ্যাল মিডিয়ায় (Facebook, WhatsApp) শেয়ার।
-   - **"ডোনার খুঁজুন" বোতাম**: স্বয়ংক্রিয়ভাবে ফিল্টার প্রস্তুত করে অ্যাপে থাকা যোগ্য ও সামঞ্জস্যপূর্ণ ডোনারদের তালিকা প্রদর্শন।
-
-4. **হোম ড্যাশবোর্ড পরিসংখ্যান ও রক্তদানের ইতিহাস টাইমলাইন**:
-   - মোট ডোনার, প্রস্তুত ডোনার ও মোট রক্তদানের রিয়েল-টাইম পরিসংখ্যান কার্ড।
-   - ডোনারের পূর্ববর্তী সব রক্তদানের তারিখ তালিকা (নতুন থেকে পুরোনো) ও ভুল লগ মুছে ফেলার সুবিধা।
-   - রক্তদানের সংখ্যার ভিত্তিতে ডোনারদের জন্য স্বীকৃতিসূচক ব্যাজ:
-     - 🌱 **নতুন ডোনার** (০ বার)
-     - 🩸 **নিয়মিত ডোনার** (১–২ বার)
-     - 🥉 **ব্রোঞ্জ ডোনার** (৩–৪ বার)
-     - 🥈 **সিলভার ডোনার** (৫–৯ বার)
-     - 🥇 **গোল্ডেন লাইফসেভার** (১০+ বার)
-
-5. **সম্পূর্ণ অফলাইন ব্যাকআপ ও রিস্টোর**:
-   - ইন্টারনেট ছাড়াই সম্পূর্ণ ডেটাবেস JSON ব্যাকআপ তৈরি ও রিস্টোর।
-   - রিস্টোরের আগে বর্তমান তথ্যের স্বয়ংক্রিয় নিরাপদ স্ন্যাপশট (`pre_restore_*.json`) সংরক্ষণ।
+A 100% offline, privacy-focused life-saver blood donor directory.  
+Tech Stack: **Flutter (Material 3) + Riverpod + SQLite (sqflite)**
 
 ---
 
-## চালানোর ধাপ
+## 🩸 Key & Life-Saving Features
+
+1. **Smart Compatibility Matching**:
+   - Automated blood compatibility filtering based on standard red blood cell (RBC) transfusion rules (e.g., for an $A^+$ recipient, compatible donors are $A^+, A^-, O^+, O^-$).
+   - Prioritizes Exact Match donors at the top of the list followed by compatible donors.
+   - Comprehensive mapping for 9 blood groups, including the rare Bombay phenotype ($Oh$).
+
+2. **Direct Contact Integration (WhatsApp, SMS & Call)**:
+   - One-tap phone call, direct WhatsApp chat, or SMS messaging for emergency donor outreach.
+   - Pre-formatted polite emergency message templates.
+   - Automatic fallback to clipboard copy and user feedback if the messaging app is not installed.
+
+3. **Emergency Blood Request & Social Post Formatter**:
+   - Compose well-structured emergency blood request posts with hospital/location, blood group, units needed, time, reason, and contact phone number.
+   - One-tap post copy or direct sharing to social media platforms (Facebook, WhatsApp, etc.).
+   - **"Find Donors" Action**: Automatically configures search filters and displays eligible matching donors already saved in the app.
+
+4. **Home Dashboard Statistics & Donation History Timeline**:
+   - Real-time statistics cards showing Total Donors, Ready Today (Eligible Donors), and Total Donations.
+   - Comprehensive donation history timeline for each donor (sorted newest to oldest) with the ability to delete mistaken logs.
+   - Donor recognition milestone badges based on lifetime donation count:
+     - 🌱 **New Donor** (0 donations)
+     - 🩸 **Regular Donor** (1–2 donations)
+     - 🥉 **Bronze Donor** (3–4 donations)
+     - 🥈 **Silver Donor** (5–9 donations)
+     - 🥇 **Golden Lifesaver** (10+ donations)
+
+5. **100% Offline Backup & Restore**:
+   - Create and restore full database backups via JSON without requiring any internet connection.
+   - Automatic pre-restore safety snapshot (`pre_restore_*.json`) stored in the app documents directory before overwriting data.
+
+---
+
+## Getting Started
 
 ```bash
 flutter create --org com.example --project-name redgrid redgrid_app
 cd redgrid_app
-# এই রিপোজিটরির lib/, test/, pubspec.yaml, analysis_options.yaml দিয়ে প্রতিস্থাপন করুন
+# Replace with this repository's lib/, test/, pubspec.yaml, analysis_options.yaml
 flutter pub get
 flutter analyze --no-fatal-infos
 flutter test
@@ -52,9 +52,9 @@ flutter run
 
 ---
 
-## Android সেটআপ
+## Android Configuration
 
-`android/app/src/main/AndroidManifest.xml` এ `<manifest>` ট্যাগের ভেতরে (Android 11+ এ কল, মেসেজ ও হোয়াটসঅ্যাপ নির্বিঘ্নে কাজ করার জন্য):
+In `android/app/src/main/AndroidManifest.xml` inside the `<manifest>` tag (required for seamless Call, SMS, and WhatsApp intents on Android 11+):
 
 ```xml
 <queries>
@@ -75,26 +75,29 @@ flutter run
 </queries>
 ```
 
-`android/app/build.gradle` এ `minSdkVersion` কমপক্ষে ২১ রাখুন।
+In `android/app/build.gradle`, set `minSdkVersion` to at least 21.
 
 ---
 
-## বাংলা ফন্ট (ঐচ্ছিক অফলাইন ফন্ট)
+## Bengali Fonts (Optional Offline Fonts)
 
-`assets/fonts/` এ Noto Sans Bengali ফাইল রেখে `pubspec.yaml` এর `fonts:` অংশের কমেন্ট খুলুন এবং `app.dart` এর `ThemeData` এ `fontFamily: 'NotoSansBengali'` যোগ করুন।
-
----
-
-## গোপনীয়তা ও ডেটা নিরাপত্তা
-
-- সব তথ্য ১০০% স্থানীয় ডিভাইসের SQLite ডেটাবেসে থাকে; কোনো সার্ভার ট্র্যাকিং বা ইন্টারনেট কোড নেই।
-- ব্যাকআপ ফাইলটি নিরাপদ স্থানে সংরক্ষণ করুন, কারণ ব্যাকআপ ফাইলে সব ডোনারের নম্বর সম্বলিত থাকে।
-- রিস্টোরের আগে অ্যাপের ডকুমেন্টস ফোল্ডারে `pre_restore_*.json` নামে একটি পূর্ববর্তী কপি স্বয়ংক্রিয়ভাবে রাখা হয়।
+To bundle Bengali fonts offline:
+1. Place Noto Sans Bengali font files under `assets/fonts/`.
+2. Uncomment the `fonts:` section in `pubspec.yaml`.
+3. Add `fontFamily: 'NotoSansBengali'` to the `ThemeData` configuration in `lib/app.dart`.
 
 ---
 
-## GitHub Actions CI ও রিলিজ APK
+## Privacy & Data Security
 
-- প্রতিটি পুশ ও পুল রিকোয়েস্টে `.github/workflows/build.yml` স্বয়ংক্রিয়ভাবে চলে।
-- ধাপসমূহ: Java 17 ও Flutter stable সেটআপ → Android স্ক্যাফোল্ড → AndroidManifest প্যাচ → `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build apk --release`।
-- বিল্ড সফল হলে GitHub Actions রানের **Artifacts** থেকে সরাসরি **`redgrid-apk`** (`app-release.apk`) ডাউনলোড করে যেকোনো অ্যান্ড্রয়েড ডিভাইসে ইনস্টল করা যায়।
+- All donor information is stored 100% locally in the device's SQLite database; there is zero server-side tracking, analytics, or internet data transmission.
+- Keep exported backup files in a secure place, as they contain phone numbers and personal donor details in unencrypted JSON.
+- An automatic local copy (`pre_restore_*.json`) is saved before any database restoration operation to prevent accidental data loss.
+
+---
+
+## GitHub Actions CI & Release APK
+
+- Automated CI pipeline runs on every push and pull request via `.github/workflows/build.yml`.
+- Build steps: Setup Java 17 & Flutter stable → Scaffold Android platform files → Patch AndroidManifest & Gradle compileSdk → `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build apk --release`.
+- Download the production APK directly from the **`redgrid-apk`** artifact in GitHub Actions run outputs (`app-release.apk`) to install on any Android device.
