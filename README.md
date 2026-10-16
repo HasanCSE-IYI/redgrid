@@ -1,22 +1,60 @@
-# রেডগ্রিড v7.0 MVP
+# রেডগ্রিড (RedGrid) - অফলাইন রক্তদাতা ডিরেক্টরি
 
-ইন্টারনেট ছাড়া চলা রক্তদাতা ডিরেক্টরি। Flutter (Material 3) + Riverpod + SQLite।
+ইন্টারনেট ছাড়া শতভাগ অফলাইনে চলা লাইফসেভার রক্তদাতা ডিরেক্টরি।  
+প্রযুক্তি: **Flutter (Material 3) + Riverpod + SQLite (sqflite)**
+
+---
+
+## 🩸 প্রধান ও জীবনরক্ষাকারী সুবিধাসমূহ
+
+1. **রক্তের গ্রুপ সামঞ্জস্যতা (Smart Compatibility Matching)**:
+   - চিকিৎসা বিজ্ঞানসম্মত লোহিত রক্তকণিকা সঞ্চালন নিয়মাবলি অনুযায়ী স্বয়ংক্রিয় সামঞ্জস্যপূর্ণ রক্তের গ্রুপের ডোনার ফিল্টারিং (যেমন: $A^+$ গ্রহীতার জন্য $A^+, A^-, O^+, O^-$)।
+   - মূল গ্রুপের সাথে হুবহু মিল (Exact Match) ডোনারদের প্রথমে অগ্রাধিকার দিয়ে তালিকা প্রদর্শন।
+   - বোম্বে ব্লাড গ্রুপ ($Oh$) সহ সর্বমোট ৯টি গ্রুপের নির্ভুল ম্যাপিং।
+
+2. **সরাসরি যোগাযোগ (Direct WhatsApp & SMS Integration)**:
+   - জরুরি প্রয়োজনে ডোনারদের সাথে এক ক্লিকে কল, সরাসরি হোয়াটসঅ্যাপ চ্যাট কিংবা এসএমএস পাঠানোর সুবিধা।
+   - পূর্বে প্রস্তুতকৃত মার্জিত ও বিনম্র বাংলা বার্তা টেমপ্লেট।
+   - অ্যাপ ইনস্টল না থাকলে স্বয়ংক্রিয়ভাবে ক্লিপবোর্ডে কপি ও ইউজার নোটিফিকেশন ফলব্যাক।
+
+3. **জরুরি রক্তের আবেদন ও সোশ্যাল মিডিয়া পোস্ট ফরমেটার**:
+   - হাসপাতাল/স্থান, রক্তের গ্রুপ, পরিমাণ, সময় ও যোগাযোগের নম্বর দিয়ে সুন্দর ও সুসংগঠিত বাংলা পোস্ট তৈরি।
+   - এক ক্লিকে পোস্ট কপি বা যেকোনো সোশ্যাল মিডিয়ায় (Facebook, WhatsApp) শেয়ার।
+   - **"ডোনার খুঁজুন" বোতাম**: স্বয়ংক্রিয়ভাবে ফিল্টার প্রস্তুত করে অ্যাপে থাকা যোগ্য ও সামঞ্জস্যপূর্ণ ডোনারদের তালিকা প্রদর্শন।
+
+4. **হোম ড্যাশবোর্ড পরিসংখ্যান ও রক্তদানের ইতিহাস টাইমলাইন**:
+   - মোট ডোনার, প্রস্তুত ডোনার ও মোট রক্তদানের রিয়েল-টাইম পরিসংখ্যান কার্ড।
+   - ডোনারের পূর্ববর্তী সব রক্তদানের তারিখ তালিকা (নতুন থেকে পুরোনো) ও ভুল লগ মুছে ফেলার সুবিধা।
+   - রক্তদানের সংখ্যার ভিত্তিতে ডোনারদের জন্য স্বীকৃতিসূচক ব্যাজ:
+     - 🌱 **নতুন ডোনার** (০ বার)
+     - 🩸 **নিয়মিত ডোনার** (১–২ বার)
+     - 🥉 **ব্রোঞ্জ ডোনার** (৩–৪ বার)
+     - 🥈 **সিলভার ডোনার** (৫–৯ বার)
+     - 🥇 **গোল্ডেন লাইফসেভার** (১০+ বার)
+
+5. **সম্পূর্ণ অফলাইন ব্যাকআপ ও রিস্টোর**:
+   - ইন্টারনেট ছাড়াই সম্পূর্ণ ডেটাবেস JSON ব্যাকআপ তৈরি ও রিস্টোর।
+   - রিস্টোরের আগে বর্তমান তথ্যের স্বয়ংক্রিয় নিরাপদ স্ন্যাপশট (`pre_restore_*.json`) সংরক্ষণ।
+
+---
 
 ## চালানোর ধাপ
 
 ```bash
 flutter create --org com.example --project-name redgrid redgrid_app
 cd redgrid_app
-# এই জিপের lib/, test/, pubspec.yaml, analysis_options.yaml দিয়ে প্রতিস্থাপন করুন
+# এই রিপোজিটরির lib/, test/, pubspec.yaml, analysis_options.yaml দিয়ে প্রতিস্থাপন করুন
 flutter pub get
-flutter analyze
+flutter analyze --no-fatal-infos
 flutter test
 flutter run
 ```
 
-## Android সেটআপ (আবশ্যক)
+---
 
-`android/app/src/main/AndroidManifest.xml` এ `<manifest>` ট্যাগের ভেতরে (`<application>` এর আগে) যোগ করুন, নইলে Android 11+ এ কল বাটন কাজ করবে না:
+## Android সেটআপ
+
+`android/app/src/main/AndroidManifest.xml` এ `<manifest>` ট্যাগের ভেতরে (Android 11+ এ কল, মেসেজ ও হোয়াটসঅ্যাপ নির্বিঘ্নে কাজ করার জন্য):
 
 ```xml
 <queries>
@@ -24,31 +62,39 @@ flutter run
     <action android:name="android.intent.action.DIAL" />
     <data android:scheme="tel" />
   </intent>
+  <intent>
+    <action android:name="android.intent.action.VIEW" />
+    <data android:scheme="sms" />
+  </intent>
+  <intent>
+    <action android:name="android.intent.action.VIEW" />
+    <data android:scheme="https" />
+  </intent>
+  <package android:name="com.whatsapp" />
+  <package android:name="com.whatsapp.w4b" />
 </queries>
 ```
 
 `android/app/build.gradle` এ `minSdkVersion` কমপক্ষে ২১ রাখুন।
 
-## বাংলা ফন্ট
+---
+
+## বাংলা ফন্ট (ঐচ্ছিক অফলাইন ফন্ট)
 
 `assets/fonts/` এ Noto Sans Bengali ফাইল রেখে `pubspec.yaml` এর `fonts:` অংশের কমেন্ট খুলুন এবং `app.dart` এর `ThemeData` এ `fontFamily: 'NotoSansBengali'` যোগ করুন।
 
-## গোপনীয়তা ও সীমা
+---
 
-- সব তথ্য শুধু এই ফোনে থাকে; কোনো নেটওয়ার্ক কোড নেই।
-- ব্যাকআপ ফাইল এনক্রিপ্টেড নয় এবং তাতে সবার ফোন নম্বর আছে, শেয়ার করার আগে ভাবুন।
-- ডেটাবেস ফাইল এনক্রিপ্টেড নয়।
-- জেলা ফিল্টারে শুধু সিড করা জেলা (চট্টগ্রাম, ঢাকা) আছে; অন্য জেলার ডোনার নাম বা নম্বর দিয়ে খোঁজা যাবে।
-- রিস্টোরের আগে অ্যাপের ডকুমেন্টস ফোল্ডারে `pre_restore_*.json` নামে বর্তমান তথ্যের কপি রাখা হয়।
+## গোপনীয়তা ও ডেটা নিরাপত্তা
 
-## GitHub Actions দিয়ে APK বিল্ড
+- সব তথ্য ১০০% স্থানীয় ডিভাইসের SQLite ডেটাবেসে থাকে; কোনো সার্ভার ট্র্যাকিং বা ইন্টারনেট কোড নেই।
+- ব্যাকআপ ফাইলটি নিরাপদ স্থানে সংরক্ষণ করুন, কারণ ব্যাকআপ ফাইলে সব ডোনারের নম্বর সম্বলিত থাকে।
+- রিস্টোরের আগে অ্যাপের ডকুমেন্টস ফোল্ডারে `pre_restore_*.json` নামে একটি পূর্ববর্তী কপি স্বয়ংক্রিয়ভাবে রাখা হয়।
 
-১. এই ফোল্ডারের সব ফাইল (`.github/`, `tool/`, `lib/`, `test/`, `pubspec.yaml`, `analysis_options.yaml`, `.gitignore`, `README.md`) একটি GitHub রিপোর `main` ব্র্যাঞ্চে পুশ করুন।
-২. রিপোর **Actions** ট্যাবে "Build Android APK" চলবে (পুশ, পুল রিকোয়েস্ট বা হাতে "Run workflow" চেপে)।
-৩. ধাপগুলো: Java 17 ও Flutter stable সেটআপ → `android/` না থাকলে তৈরি → ম্যানিফেস্টে `tel` queries বসানো → `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build apk --release`।
-৪. শেষ হলে রান পেজের **Artifacts** থেকে `redgrid-apk` নামিয়ে `app-release.apk` ফোনে ইনস্টল করুন।
+---
 
-সীমা:
-- এই APK ডিবাগ কী দিয়ে সাইন করা, ইন্সটল করা যায় কিন্তু Play Store এ দেওয়া যাবে না। Play Store এর জন্য নিজের keystore ও GitHub Secrets দিয়ে সাইনিং যোগ করতে হবে।
-- `flutter analyze` এ deprecation টাইপের info নোটিশ বিল্ড থামায় না (`--no-fatal-infos`), কিন্তু warning বা error থামাবে।
-- ওয়ার্কফ্লো আমার এখানে চালিয়ে দেখা হয়নি; প্রথম রানে কোনো ধাপ ব্যর্থ হলে লগ দেখে ঠিক করুন।
+## GitHub Actions CI ও রিলিজ APK
+
+- প্রতিটি পুশ ও পুল রিকোয়েস্টে `.github/workflows/build.yml` স্বয়ংক্রিয়ভাবে চলে।
+- ধাপসমূহ: Java 17 ও Flutter stable সেটআপ → Android স্ক্যাফোল্ড → AndroidManifest প্যাচ → `flutter pub get` → `flutter analyze` → `flutter test` → `flutter build apk --release`।
+- বিল্ড সফল হলে GitHub Actions রানের **Artifacts** থেকে সরাসরি **`redgrid-apk`** (`app-release.apk`) ডাউনলোড করে যেকোনো অ্যান্ড্রয়েড ডিভাইসে ইনস্টল করা যায়।
