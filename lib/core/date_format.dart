@@ -26,3 +26,10 @@ DateTime? parseIsoDate(String? value) {
 
 /// বাংলা অঙ্কে `দিন/মাস/বছর`।
 String formatDateBn(DateTime date) => toBanglaDigits('${date.day}/${date.month}/${date.year}');
+
+/// ISO স্ট্রিং তারিখ (YYYY-MM-DD) পার্স করে বাংলায় দিন/মাস/বছর দেখায়।
+String formatIsoDateBn(String iso) {
+  final parsed = parseIsoDate(iso);
+  return parsed != null ? formatDateBn(parsed) : toBanglaDigits(iso);
+}
+

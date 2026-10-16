@@ -41,6 +41,11 @@ void main() {
       expect(formatDateBn(DateTime.utc(2026, 10, 16)), '১৬/১০/২০২৬');
     });
 
+    test('formatIsoDateBn outputs Bengali digits from ISO string', () {
+      expect(formatIsoDateBn('2026-10-16'), '১৬/১০/২০২৬');
+      expect(formatIsoDateBn('invalid-date'), 'invalid-date');
+    });
+
     test('Strings.eligibleIn uses Bengali digits', () {
       expect(Strings.eligibleIn(45, '১৬/১০/২০২৬'), 'আর ৪৫ দিন পরে যোগ্য (১৬/১০/২০২৬ থেকে)');
     });

@@ -354,7 +354,7 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
                         child: Icon(Icons.bloodtype, size: 16, color: kCrimson),
                       ),
                       title: Text(
-                        formatDateBn(date),
+                        formatIsoDateBn(date),
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       subtitle: Text(date, style: theme.textTheme.bodySmall),
