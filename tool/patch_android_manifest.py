@@ -143,11 +143,32 @@ def patch_pub_cache() -> None:
     print(f"Total pub-cache plugins patched to compileSdk 36: {patched_count}")
 
 
+def patch_launcher_icons() -> None:
+    res_dir = pathlib.Path("android/app/src/main/res")
+    source_res = pathlib.Path("assets/icon/android_res")
+    if source_res.exists() and res_dir.exists():
+        import shutil
+        for density_dir in source_res.iterdir():
+            if density_dir.is_dir():
+                target_dir = res_dir / density_dir.name
+                target_dir.mkdir(parents=True, exist_ok=True)
+                src_icon = density_dir / "ic_launcher.png"
+                if src_icon.exists():
+                    shutil.copy2(src_icon, target_dir / "ic_launcher.png")
+                    print(f"Copied {density_dir.name}/ic_launcher.png to android res")
+
+    try:
+        subprocess.run(["dart", "run", "flutter_launcher_icons"], check=False)
+    except Exception:
+        pass
+
+
 def main() -> int:
     manifest_ok = patch_manifest()
     patch_local_properties()
     patch_app_gradle()
     patch_pub_cache()
+    patch_launcher_icons()
     if not ANDROID_DIR.exists():
         return 0
     return 0 if manifest_ok else 1
