@@ -64,36 +64,40 @@ def patch_local_properties() -> None:
         print("android/local.properties compileSdk check completed")
 
 
-def patch_app_gradle() -> None:
-    # 1. Groovy: android/app/build.gradle
-    app_groovy = pathlib.Path("android/app/build.gradle")
-    if app_groovy.exists():
-        text = app_groovy.read_text(encoding="utf-8")
+def patch_file(p: pathlib.Path) -> bool:
+    try:
+        text = p.read_text(encoding="utf-8")
         orig = text
-        text = re.sub(r'compileSdk\s*=\s*flutter\.compileSdkVersion', 'compileSdk = 36', text)
-        text = re.sub(r'compileSdkVersion\s+flutter\.compileSdkVersion', 'compileSdkVersion 36', text)
-        text = re.sub(r'targetSdk\s*=\s*flutter\.targetSdkVersion', 'targetSdk = 36', text)
-        text = re.sub(r'targetSdkVersion\s+flutter\.targetSdkVersion', 'targetSdkVersion 36', text)
-        if text != orig:
-            app_groovy.write_text(text, encoding="utf-8")
-            print("android/app/build.gradle patched compileSdk to 36")
-        else:
-            print("android/app/build.gradle already configured")
 
-    # 2. Kotlin DSL: android/app/build.gradle.kts
-    app_kts = pathlib.Path("android/app/build.gradle.kts")
-    if app_kts.exists():
-        text = app_kts.read_text(encoding="utf-8")
-        orig = text
-        text = re.sub(r'compileSdk\s*=\s*flutter\.compileSdkVersion', 'compileSdk = 36', text)
-        text = re.sub(r'compileSdkVersion\s*\(\s*flutter\.compileSdkVersion\s*\)', 'compileSdk = 36', text)
-        text = re.sub(r'targetSdk\s*=\s*flutter\.targetSdkVersion', 'targetSdk = 36', text)
-        text = re.sub(r'targetSdkVersion\s*\(\s*flutter\.targetSdkVersion\s*\)', 'targetSdk = 36', text)
+        def bump_sdk(match):
+            val = int(match.group(2))
+            return f"{match.group(1)}{max(val, 36)}"
+
+        # 1. Numeric compileSdk / compileSdkVersion: e.g. compileSdk 34, compileSdkVersion 34, compileSdk = 34, compileSdk(34)
+        text = re.sub(r'(compileSdk(?:Version)?\s*=?\s*\(?\s*)([0-9]+)', bump_sdk, text)
+
+        # 2. Dynamic flutter.compileSdkVersion references
+        text = re.sub(r'compileSdk(?:Version)?\s*=?\s*\(?\s*flutter\.compileSdkVersion\s*\)?', 'compileSdk = 36', text)
+
+        # 3. Dynamic flutter.targetSdkVersion references
+        text = re.sub(r'targetSdk(?:Version)?\s*=?\s*\(?\s*flutter\.targetSdkVersion\s*\)?', 'targetSdk = 36', text)
+
         if text != orig:
-            app_kts.write_text(text, encoding="utf-8")
-            print("android/app/build.gradle.kts patched compileSdk to 36")
-        else:
-            print("android/app/build.gradle.kts already configured")
+            p.write_text(text, encoding="utf-8")
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def patch_app_gradle() -> None:
+    app_groovy = pathlib.Path("android/app/build.gradle")
+    if app_groovy.exists() and patch_file(app_groovy):
+        print("android/app/build.gradle patched compileSdk to 36")
+
+    app_kts = pathlib.Path("android/app/build.gradle.kts")
+    if app_kts.exists() and patch_file(app_kts):
+        print("android/app/build.gradle.kts patched compileSdk to 36")
 
 
 def patch_pub_cache() -> None:
@@ -108,34 +112,15 @@ def patch_pub_cache() -> None:
         cache_dirs.append(pathlib.Path(os.environ["PUB_CACHE"]))
     cache_dirs.append(pathlib.Path.home() / ".pub-cache")
 
-    def bump_sdk(match):
-        val = int(match.group(2))
-        return f"{match.group(1)}{max(val, 36)}"
-
     patched_count = 0
     for c_dir in cache_dirs:
         if not c_dir.exists():
             continue
         for gradle_file in c_dir.rglob("*build.gradle*"):
-            try:
-                text = gradle_file.read_text(encoding="utf-8")
-                orig = text
-                text = re.sub(r'(compileSdkVersion\s+)([0-9]+)', bump_sdk, text)
-                text = re.sub(r'(compileSdk\s*=\s*)([0-9]+)', bump_sdk, text)
-                text = re.sub(
-                    r'(compileSdkVersion\s*\(\s*)([0-9]+)(\s*\))',
-                    lambda m: f"{m.group(1)}{max(int(m.group(2)), 36)}{m.group(3)}",
-                    text,
-                )
-                text = re.sub(r'compileSdkVersion\s+flutter\.compileSdkVersion', 'compileSdkVersion 36', text)
-                text = re.sub(r'compileSdk\s*=\s*flutter\.compileSdkVersion', 'compileSdk = 36', text)
-                if text != orig:
-                    gradle_file.write_text(text, encoding="utf-8")
-                    pkg_name = gradle_file.parent.parent.name if gradle_file.parent.name == "android" else gradle_file.parent.name
-                    print(f"Patched {pkg_name}/{gradle_file.name} compileSdk to 36")
-                    patched_count += 1
-            except Exception:
-                pass
+            if patch_file(gradle_file):
+                pkg_name = gradle_file.parent.parent.name if gradle_file.parent.name == "android" else gradle_file.parent.name
+                print(f"Patched {pkg_name}/{gradle_file.name} compileSdk to 36")
+                patched_count += 1
     print(f"Total pub-cache plugins patched to compileSdk 36: {patched_count}")
 
 
