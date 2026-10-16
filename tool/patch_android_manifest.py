@@ -22,7 +22,7 @@ INTENT = """    <intent>
 GROOVY_SUBPROJECTS_HOOK = """
 // RedGrid patch: Force compileSdk 36 and disable CheckAarMetadata on plugins
 subprojects { project ->
-    project.afterEvaluate {
+    def configure = {
         if (project.hasProperty("android")) {
             try {
                 project.android {
@@ -30,6 +30,11 @@ subprojects { project ->
                 }
             } catch (Exception ignored) {}
         }
+    }
+    if (project.state.executed) {
+        configure()
+    } else {
+        project.afterEvaluate { configure() }
     }
     project.tasks.configureEach { task ->
         if (task.name.contains("AarMetadata")) {
@@ -42,14 +47,19 @@ subprojects { project ->
 KOTLIN_SUBPROJECTS_HOOK = """
 // RedGrid patch: Force compileSdk 36 and disable CheckAarMetadata on plugins
 subprojects {
-    afterEvaluate {
-        val ext = project.extensions.findByName("android")
+    val configureAction = org.gradle.api.Action<Project> { proj ->
+        val ext = proj.extensions.findByName("android")
         if (ext != null) {
             try {
                 val method = ext.javaClass.getMethod("setCompileSdkVersion", java.lang.Integer.TYPE)
                 method.invoke(ext, 36)
             } catch (e: Exception) {}
         }
+    }
+    if (state.executed) {
+        configureAction.execute(this)
+    } else {
+        afterEvaluate(configureAction)
     }
     tasks.configureEach {
         if (name.contains("AarMetadata")) {
