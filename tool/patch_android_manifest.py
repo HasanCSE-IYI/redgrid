@@ -20,22 +20,8 @@ INTENT = """    <intent>
 """
 
 GROOVY_SUBPROJECTS_HOOK = """
-// RedGrid patch: Force compileSdk 36 and disable CheckAarMetadata on plugins
+// RedGrid patch: Disable CheckAarMetadata on plugins
 subprojects { project ->
-    def configure = {
-        if (project.hasProperty("android")) {
-            try {
-                project.android {
-                    compileSdkVersion 36
-                }
-            } catch (Exception ignored) {}
-        }
-    }
-    if (project.state.executed) {
-        configure()
-    } else {
-        project.afterEvaluate { configure() }
-    }
     project.tasks.configureEach { task ->
         if (task.name.contains("AarMetadata")) {
             task.enabled = false
@@ -45,22 +31,8 @@ subprojects { project ->
 """
 
 KOTLIN_SUBPROJECTS_HOOK = """
-// RedGrid patch: Force compileSdk 36 and disable CheckAarMetadata on plugins
+// RedGrid patch: Disable CheckAarMetadata on plugins
 subprojects {
-    val configureAction = org.gradle.api.Action<Project> { proj ->
-        val ext = proj.extensions.findByName("android")
-        if (ext != null) {
-            try {
-                val method = ext.javaClass.getMethod("setCompileSdkVersion", java.lang.Integer.TYPE)
-                method.invoke(ext, 36)
-            } catch (e: Exception) {}
-        }
-    }
-    if (state.executed) {
-        configureAction.execute(this)
-    } else {
-        afterEvaluate(configureAction)
-    }
     tasks.configureEach {
         if (name.contains("AarMetadata")) {
             enabled = false
@@ -174,7 +146,7 @@ def patch_root_gradle() -> None:
         if "AarMetadata" not in text:
             text += GROOVY_SUBPROJECTS_HOOK
             root_groovy.write_text(text, encoding="utf-8")
-            print("android/build.gradle patched with compileSdk 36 & AarMetadata hook")
+            print("android/build.gradle patched with AarMetadata bypass hook")
         else:
             print("android/build.gradle already patched")
 
@@ -185,7 +157,7 @@ def patch_root_gradle() -> None:
         if "AarMetadata" not in text:
             text += KOTLIN_SUBPROJECTS_HOOK
             root_kts.write_text(text, encoding="utf-8")
-            print("android/build.gradle.kts patched with compileSdk 36 & AarMetadata hook")
+            print("android/build.gradle.kts patched with AarMetadata bypass hook")
         else:
             print("android/build.gradle.kts already patched")
 
