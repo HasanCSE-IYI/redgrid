@@ -24,6 +24,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _debounce;
   late final TextEditingController _searchController;
 
