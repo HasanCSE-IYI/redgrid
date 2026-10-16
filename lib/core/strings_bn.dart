@@ -57,6 +57,55 @@ class Strings {
   static const phoneCopied = 'ফোন নম্বর কপি করা হয়েছে';
   static const menu = 'আরও বিকল্প';
 
+  // সামঞ্জস্যপূর্ণ রক্তের গ্রুপ (Compatibility)
+  static const includeCompatible = 'সামঞ্জস্যপূর্ণ গ্রুপ সহ';
+  static const compatibleBadge = 'সামঞ্জস্যপূর্ণ';
+  static String compatibleInfo(String recipient, List<String> groups) =>
+      '$recipient গ্রুপের জন্য গ্রহণযোগ্য: ${groups.join(', ')}';
+
+  // সরাসরি যোগাযোগ (WhatsApp & SMS)
+  static const whatsapp = 'হোয়াটসঅ্যাপ';
+  static const sms = 'মেসেজ';
+  static const whatsappFailed = 'হোয়াটসঅ্যাপ চালু করা যায়নি। বার্তাটি কপি করা হয়েছে।';
+  static const smsFailed = 'মেসেজ অ্যাপ চালু করা যায়নি। বার্তাটি কপি করা হয়েছে।';
+  static const messageCopied = 'বার্তা ক্লিপবোর্ডে কপি করা হয়েছে';
+
+  // জরুরি রক্তের আবেদন (Emergency Request & Social Broadcast)
+  static const emergencyRequest = 'জরুরি রক্তের আবেদন';
+  static const emergencyTitle = 'জরুরি রক্তের আবেদন তৈরি করুন';
+  static const patientHospital = 'হাসপাতাল / স্থান';
+  static const hospitalHint = 'যেমন: ঢাকা মেডিকেল কলেজ হাসপাতাল';
+  static const unitsNeeded = 'রক্তের পরিমাণ';
+  static const unitsHint = 'যেমন: ১ ব্যাগ';
+  static const whenNeeded = 'কখন প্রয়োজন';
+  static const whenHint = 'যেমন: আজ সন্ধ্যা ৬টায় / জরুরি';
+  static const reason = 'রোগীর সমস্যা / কারণ (ঐচ্ছিক)';
+  static const reasonHint = 'যেমন: সিজারিয়ান / দুর্ঘটনা / থ্যালাসেমিয়া';
+  static const contactPhone = 'যোগাযোগের ফোন নম্বর';
+  static const sharePost = 'পোস্ট শেয়ার';
+  static const copyPost = 'পোস্ট কপি';
+  static const findEligibleDonors = 'ডোনার খুঁজুন';
+  static const postCopied = 'আবেদনের লেখা কপি করা হয়েছে';
+  static const broadcastHeader = '🚨 #জরুরি_রক্তের_প্রয়োজন 🚨';
+  static const broadcastFooter = '(রেডগ্রিড - লাইফসেভার অফলাইন ডিরেক্টরি)';
+
+  // হোম ড্যাশবোর্ড পরিসংখ্যান (Summary Stats)
+  static const totalDonors = 'মোট ডোনার';
+  static const readyDonors = 'প্রস্তুত আজ';
+  static const totalDonations = 'মোট রক্তদান';
+  static const countUnit = 'জন';
+  static const timesUnit = 'বার';
+
+  // ডোনার প্রোফাইল ও ইতিহাস (Profile & Timeline)
+  static const donorDetails = 'ডোনারের ইতিহাস';
+  static const donationHistory = 'রক্তদানের ইতিহাস';
+  static const noHistory = 'এখনো কোনো রক্তদানের তারিখ রেকর্ড নেই';
+  static const addDonationDate = 'নতুন রক্তদানের তারিখ যোগ';
+  static const deleteLogConfirmTitle = 'এই তারিখের রেকর্ড মুছবেন?';
+  static const deleteLogConfirmBody =
+      'এই রক্তদানের লগটি মুছে ফেলা হবে এবং ডোনারের মোট দানের হিসাব হালনাগাদ হবে।';
+  static const logDeleted = 'রক্তদানের রেকর্ড মুছে ফেলা হয়েছে';
+
   static const emptyList = 'কোনো ডোনার পাওয়া যায়নি';
   static const emptyHint = 'নিচের বোতাম চেপে প্রথম ডোনার যোগ করুন, অথবা ফিল্টার বদলান।';
   static const errorLoad = 'তালিকা লোড করা যায়নি';

@@ -3,13 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../app.dart';
 import '../core/areas.dart';
 import '../core/constants.dart';
+import '../core/digits.dart';
 import '../core/strings_bn.dart';
+import '../domain/compatibility.dart';
 import '../providers.dart';
 import 'data_tools.dart';
 import 'donor_card.dart';
 import 'donor_form_screen.dart';
+import 'emergency_request_dialog.dart';
 
 enum _MenuAction { backup, restore, about }
 
@@ -56,6 +60,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final filter = ref.watch(filterProvider);
     final notifier = ref.read(filterProvider.notifier);
     final donors = ref.watch(donorListProvider);
+    final statsAsync = ref.watch(donorStatsProvider);
     final theme = Theme.of(context);
 
     final areaOptions = filter.district == null
@@ -66,6 +71,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: const Text(Strings.appTitle),
         actions: [
+          IconButton(
+            tooltip: Strings.emergencyRequest,
+            icon: const Icon(Icons.emergency_share, color: kCrimson),
+            onPressed: () => EmergencyRequestDialog.show(
+              context,
+              bloodGroup: filter.bloodGroup,
+            ),
+          ),
           PopupMenuButton<_MenuAction>(
             tooltip: Strings.menu,
             onSelected: _onMenu,
@@ -91,8 +104,87 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // সারাংশ পরিসংখ্যান ব্যানার
+                    statsAsync.when(
+                      data: (stats) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _StatItem(
+                                label: Strings.totalDonors,
+                                value: '${toBanglaDigits(stats.totalDonors)} ${Strings.countUnit}',
+                                icon: Icons.people_outline,
+                                color: theme.colorScheme.primary,
+                              ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+                              ),
+                              InkWell(
+                                onTap: () => notifier.setEligibleOnly(!filter.eligibleOnly),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  child: _StatItem(
+                                    label: Strings.readyDonors,
+                                    value: '${toBanglaDigits(stats.eligibleToday)} ${Strings.countUnit}',
+                                    icon: Icons.check_circle_outline,
+                                    color: kEligibleGreen,
+                                    isHighlighted: filter.eligibleOnly,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+                              ),
+                              _StatItem(
+                                label: Strings.totalDonations,
+                                value: '${toBanglaDigits(stats.totalDonations)} ${Strings.timesUnit}',
+                                icon: Icons.bloodtype_outlined,
+                                color: kCrimson,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                    // জরুরি আবেদন দ্রুত তৈরি বোতাম
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: OutlinedButton.icon(
+                        onPressed: () => EmergencyRequestDialog.show(
+                          context,
+                          bloodGroup: filter.bloodGroup,
+                        ),
+                        icon: const Icon(Icons.emergency, color: kCrimson, size: 20),
+                        label: const Text(
+                          'জরুরি রক্তের আবেদন তৈরি ও শেয়ার',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: kCrimson, width: 1.2),
+                          foregroundColor: kCrimson,
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                        ),
+                      ),
+                    ),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -137,6 +229,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ],
                       ),
                     ),
+                    if (filter.bloodGroup != null) ...[
+                      const SizedBox(height: 6),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: FilterChip(
+                          avatar: Icon(
+                            filter.includeCompatible ? Icons.check_circle : Icons.swap_horiz,
+                            size: 16,
+                            color: filter.includeCompatible ? kCrimson : null,
+                          ),
+                          label: Text(
+                            '${filter.bloodGroup} এর সামঞ্জস্যপূর্ণ ডোনার সহ (${BloodCompatibility.compatibleDonorsFor(filter.bloodGroup!).join(', ')})',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: filter.includeCompatible ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                          selected: filter.includeCompatible,
+                          onSelected: notifier.setIncludeCompatible,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -215,6 +329,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.isHighlighted = false,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final bool isHighlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isHighlighted ? color : null,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: isHighlighted ? color : theme.colorScheme.onSurfaceVariant,
+            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
     );
   }
 }

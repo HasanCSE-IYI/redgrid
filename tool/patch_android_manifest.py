@@ -14,11 +14,20 @@ import sys
 ANDROID_DIR = pathlib.Path("android")
 MANIFEST = pathlib.Path("android/app/src/main/AndroidManifest.xml")
 
-MARKER = "android.intent.action.DIAL"
 INTENT = """    <intent>
         <action android:name="android.intent.action.DIAL" />
         <data android:scheme="tel" />
     </intent>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="sms" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" />
+    </intent>
+    <package android:name="com.whatsapp" />
+    <package android:name="com.whatsapp.w4b" />
 """
 
 
@@ -27,21 +36,32 @@ def patch_manifest() -> bool:
         print(f"warning: {MANIFEST} not found", file=sys.stderr)
         return False
     text = MANIFEST.read_text(encoding="utf-8")
-    if MARKER in text:
+    if 'android:scheme="sms"' in text and 'android.intent.action.DIAL' in text:
         print("manifest already patched")
         return True
 
     if "<queries>" in text:
-        text = text.replace("<queries>", "<queries>\n" + INTENT, 1)
+        if "android.intent.action.DIAL" in text:
+            extra = """    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="sms" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" />
+    </intent>
+    <package android:name="com.whatsapp" />
+    <package android:name="com.whatsapp.w4b" />
+"""
+            text = text.replace("<queries>", "<queries>\n" + extra, 1)
+        else:
+            text = text.replace("<queries>", "<queries>\n" + INTENT, 1)
     else:
         block = "    <queries>\n" + INTENT + "    </queries>\n"
         text = text.replace("</manifest>", block + "</manifest>", 1)
 
-    if MARKER not in text:
-        print("error: could not patch manifest", file=sys.stderr)
-        return False
     MANIFEST.write_text(text, encoding="utf-8")
-    print("manifest patched")
+    print("manifest patched with tel, sms, https, and whatsapp queries")
     return True
 
 
