@@ -28,6 +28,6 @@ class AppConstants {
 
   /// বিল্ট-ইন ক্লাউড সিঙ্ক ডিফল্ট
   static const defaultCloudUrl = 'https://redgrid-sync.rauaha.workers.dev';
-  static const defaultSyncKey = '';
+  static const defaultSyncKey = 'rg_sec_2026_9b8e4f1a';
   static const appAgentHeader = 'RedGrid/1.0';
 }

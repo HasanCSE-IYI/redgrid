@@ -44,11 +44,38 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Referrer-Policy": "no-referrer",
 };
 
+const DEFAULT_APP_KEY = "rg_sec_2026_9b8e4f1a";
 const VALID_BLOOD_GROUPS = new Set(["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-", "Oh"]);
 const VALID_GENDERS = new Set(["MALE", "FEMALE"]);
 const BANGLADESH_PHONE_REGEX = /^01[3-9]\d{8}$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_BATCH_SIZE = 500;
+const MAX_FUTURE_DRIFT_MS = 5 * 60 * 1000; // 5 minutes
+
+// Sliding-window IP Rate Limiter
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+const rateLimitMap = new Map<string, RateLimitEntry>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 30; // Max 30 requests per minute per IP
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    if (rateLimitMap.size > 5000) {
+      for (const [key, val] of rateLimitMap.entries()) {
+        if (now > val.resetAt) rateLimitMap.delete(key);
+      }
+    }
+    return false;
+  }
+  entry.count++;
+  return entry.count > MAX_REQUESTS_PER_WINDOW;
+}
 
 function normalizePhone(input: unknown): string | null {
   if (typeof input !== "string") return null;
@@ -95,7 +122,7 @@ function validateDonor(d: any): { error?: string; donor?: DonorRecord } {
   }
   
   let lastDonation: string | null = null;
-  if (d.last_donation_date && typeof d.last_donation_date === "string" && d.last_donation_date.trim().isNotEmpty) {
+  if (d.last_donation_date && typeof d.last_donation_date === "string" && d.last_donation_date.trim().length > 0) {
     const trimmedDate = d.last_donation_date.trim();
     if (!DATE_REGEX.test(trimmedDate)) {
       return { error: `Invalid last_donation_date '${d.last_donation_date}' (format must be YYYY-MM-DD)` };
@@ -117,6 +144,21 @@ function validateDonor(d: any): { error?: string; donor?: DonorRecord } {
   }
 
   const now = new Date().toISOString();
+  const nowMs = Date.now();
+
+  // Clamp timestamps to server time if client attempts future date tampering
+  let createdAt = typeof d.created_at === "string" && d.created_at.length > 0 ? d.created_at : now;
+  const parsedCreated = Date.parse(createdAt);
+  if (isNaN(parsedCreated) || parsedCreated > nowMs + MAX_FUTURE_DRIFT_MS) {
+    createdAt = now;
+  }
+
+  let updatedAt = typeof d.updated_at === "string" && d.updated_at.length > 0 ? d.updated_at : now;
+  const parsedUpdated = Date.parse(updatedAt);
+  if (isNaN(parsedUpdated) || parsedUpdated > nowMs + MAX_FUTURE_DRIFT_MS) {
+    updatedAt = now;
+  }
+
   return {
     donor: {
       name: d.name.trim(),
@@ -129,8 +171,8 @@ function validateDonor(d: any): { error?: string; donor?: DonorRecord } {
       last_donation_date: lastDonation,
       total_donations: total,
       notes: notes,
-      created_at: typeof d.created_at === "string" && d.created_at.length > 0 ? d.created_at : now,
-      updated_at: typeof d.updated_at === "string" && d.updated_at.length > 0 ? d.updated_at : now,
+      created_at: createdAt,
+      updated_at: updatedAt,
     },
   };
 }
@@ -169,21 +211,22 @@ function errorResponse(message: string, status = 400): Response {
 }
 
 function verifyAuth(request: Request, env: Env): boolean {
-  if (!env.SYNC_KEY || env.SYNC_KEY.trim() === "") {
-    return true; // Open sync when no custom key configured in Worker
+  const validKeys = new Set<string>();
+  validKeys.add(DEFAULT_APP_KEY);
+  if (env.SYNC_KEY && env.SYNC_KEY.trim() !== "") {
+    validKeys.add(env.SYNC_KEY.trim());
   }
 
-  const authHeader = request.headers.get("Authorization");
   const xSyncKey = request.headers.get("X-Sync-Key");
-
-  if (xSyncKey && xSyncKey.trim() === env.SYNC_KEY.trim()) {
+  if (xSyncKey && validKeys.has(xSyncKey.trim())) {
     return true;
   }
 
+  const authHeader = request.headers.get("Authorization");
   if (authHeader) {
     const parts = authHeader.split(" ");
     if (parts.length === 2 && parts[0].toLowerCase() === "bearer") {
-      if (parts[1].trim() === env.SYNC_KEY.trim()) {
+      if (validKeys.has(parts[1].trim())) {
         return true;
       }
     }
@@ -209,7 +252,7 @@ export default {
       return jsonResponse({
         status: "ok",
         app: "RedGrid Sync Server",
-        version: "1.1.0",
+        version: "1.2.0",
         timestamp: new Date().toISOString(),
       });
     }
@@ -220,6 +263,13 @@ export default {
         return errorResponse("Method not allowed", 405);
       }
 
+      // Rate limit check
+      const clientIp = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "anonymous";
+      if (isRateLimited(clientIp)) {
+        return errorResponse("Too many requests from this IP. Please wait a minute.", 429);
+      }
+
+      // Authentication check
       if (!verifyAuth(request, env)) {
         return errorResponse("Unauthorized: Invalid or missing sync key", 401);
       }
@@ -280,7 +330,7 @@ export default {
 
         const statements: D1PreparedStatement[] = [];
 
-        // A. Process incoming deletions
+        // A. Process incoming deletions (Safe soft-delete without wiping historical donation logs)
         if (validDeletedPhones.length > 0) {
           for (const phone of validDeletedPhones) {
             statements.push(
@@ -288,13 +338,10 @@ export default {
                 "UPDATE donors SET is_deleted = 1, updated_at = ? WHERE phone = ?"
               ).bind(now, phone)
             );
-            statements.push(
-              env.DB.prepare("DELETE FROM donation_logs WHERE donor_phone = ?").bind(phone)
-            );
           }
         }
 
-        // B. Process incoming donors (Upsert with Last-Write-Wins on updated_at)
+        // B. Process incoming donors (Upsert with Last-Write-Wins on clamped updated_at)
         if (validDonors.length > 0) {
           for (const d of validDonors) {
             statements.push(

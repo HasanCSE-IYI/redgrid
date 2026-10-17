@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../core/constants.dart';
 import '../core/date_format.dart';
+import '../core/input_validator.dart';
 import '../core/phone_normalizer.dart';
 import '../domain/compatibility.dart';
 import '../domain/eligibility.dart';
@@ -370,8 +371,11 @@ class DonorRepository {
         'created_at',
         'updated_at',
       ],
-      where: since != null ? 'updated_at > ?' : null,
+      where: since != null
+          ? 'updated_at > ? AND consent_to_share = 1'
+          : 'consent_to_share = 1',
       whereArgs: since != null ? [since] : null,
+      orderBy: 'updated_at ASC',
     );
     return rows.map((r) => Map<String, dynamic>.from(r)).toList();
   }
@@ -381,7 +385,9 @@ class DonorRepository {
       SELECT d.phone AS donor_phone, l.donation_date, l.created_at
       FROM ${AppConstants.tableLogs} l
       JOIN ${AppConstants.tableDonors} d ON l.donor_id = d.id
-      ${since != null ? 'WHERE l.created_at > ?' : ''}
+      WHERE d.consent_to_share = 1
+      ${since != null ? 'AND l.created_at > ?' : ''}
+      ORDER BY l.created_at ASC
     ''';
     final rows = await _db.rawQuery(sql, since != null ? [since] : null);
     return rows.map((r) => Map<String, dynamic>.from(r)).toList();
@@ -405,17 +411,14 @@ class DonorRepository {
         await txn.delete(AppConstants.tableDeleted, where: 'phone = ?', whereArgs: [phone]);
       }
 
-      // 2. Process donors (Last-Write-Wins on updated_at)
+      // 2. Process donors (Last-Write-Wins on updated_at with schema validation)
       for (final remote in donors) {
-        final phone = remote['phone'] as String;
-        final remoteUpdatedAt = remote['updated_at'] as String;
+        final rawPhone = remote['phone'];
+        if (rawPhone is! String) continue;
+        final phone = PhoneNormalizer.normalize(rawPhone);
+        if (phone == null) continue;
 
-        final existing = await txn.query(
-          AppConstants.tableDonors,
-          columns: ['id', 'updated_at'],
-          where: 'phone = ?',
-          whereArgs: [phone],
-        );
+        final remoteUpdatedAt = remote['updated_at'] as String? ?? isoNow();
 
         final donorMap = <String, Object?>{
           'name': remote['name'],
@@ -427,11 +430,24 @@ class DonorRepository {
           'district': remote['district'],
           'area': remote['area'],
           'last_donation_date': remote['last_donation_date'],
-          'total_donations': remote['total_donations'] ?? 0,
+          'total_donations': remote['total_donations'] is int ? remote['total_donations'] : 0,
           'notes': remote['notes'],
-          'created_at': remote['created_at'],
+          'created_at': remote['created_at'] is String ? remote['created_at'] : isoNow(),
           'updated_at': remoteUpdatedAt,
         };
+
+        // Client-side validation: skip corrupted/invalid records to prevent CHECK constraint failures
+        final validationError = InputValidator.validateDonorMap(donorMap);
+        if (validationError != null) {
+          continue;
+        }
+
+        final existing = await txn.query(
+          AppConstants.tableDonors,
+          columns: ['id', 'updated_at'],
+          where: 'phone = ?',
+          whereArgs: [phone],
+        );
 
         if (existing.isEmpty) {
           await txn.delete(AppConstants.tableDeleted, where: 'phone = ?', whereArgs: [phone]);
@@ -452,9 +468,13 @@ class DonorRepository {
 
       // 3. Process donation logs
       for (final log in logs) {
-        final donorPhone = log['donor_phone'] as String;
-        final donationDate = log['donation_date'] as String;
-        final createdAt = log['created_at'] as String;
+        final rawPhone = log['donor_phone'];
+        final rawDate = log['donation_date'];
+        if (rawPhone is! String || rawDate is! String) continue;
+        final donorPhone = PhoneNormalizer.normalize(rawPhone);
+        if (donorPhone == null) continue;
+        final donationDate = rawDate.trim();
+        final createdAt = log['created_at'] is String ? (log['created_at'] as String) : isoNow();
 
         final donorRows = await txn.query(
           AppConstants.tableDonors,

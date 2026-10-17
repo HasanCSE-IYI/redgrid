@@ -49,6 +49,15 @@ def patch_manifest() -> bool:
             changed = True
             print("manifest patched with INTERNET and ACCESS_NETWORK_STATE permissions")
 
+    if 'android:allowBackup="true"' in text:
+        text = text.replace('android:allowBackup="true"', 'android:allowBackup="false"')
+        changed = True
+        print("manifest patched with android:allowBackup=false")
+    elif "android:allowBackup" not in text and "<application" in text:
+        text = text.replace("<application", '<application android:allowBackup="false"', 1)
+        changed = True
+        print("manifest patched with android:allowBackup=false")
+
     if 'android:scheme="sms"' not in text or 'android.intent.action.DIAL' not in text:
         if "<queries>" in text:
             if "android.intent.action.DIAL" in text:

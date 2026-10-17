@@ -153,4 +153,61 @@ void main() {
       expect(() => backup.parseBackup('{oops'), throwsA(isA<BackupException>()));
     });
   });
+
+  group('ক্লাউড সিঙ্ক নিরাপত্তা ও ফিল্টারিং', () {
+    test('সম্মতি ছাড়া কোনো ডোনার সিঙ্ক তালিকায় আসে না', () async {
+      await repo.insert(_donor(phone: '01711111111', name: 'সম্মত'));
+      await db.insert('donors', {
+        'name': 'অসম্মত',
+        'blood_group': 'B+',
+        'gender': 'MALE',
+        'phone': '01722222222',
+        'consent_to_share': 0,
+        'district': 'ঢাকা',
+        'area': 'মিরপুর',
+        'created_at': '2026-01-01T00:00:00Z',
+        'updated_at': '2026-01-01T00:00:00Z',
+      });
+
+      final syncDonors = await repo.getDonorsForSync();
+      expect(syncDonors.length, 1);
+      expect(syncDonors.first['phone'], '01711111111');
+    });
+
+    test('রিমোট সিঙ্কে অবৈধ ডেটা এলে ক্র্যাশ না করে নিরাপদে বাদ দেয়', () async {
+      final validRemote = {
+        'name': 'সঠিক ডোনার',
+        'blood_group': 'O+',
+        'gender': 'FEMALE',
+        'phone': '01733333333',
+        'consent_to_share': 1,
+        'district': 'ঢাকা',
+        'area': 'গুলশান',
+        'created_at': '2026-01-01T00:00:00Z',
+        'updated_at': '2026-01-01T00:00:00Z',
+      };
+      final invalidRemote = {
+        'name': 'অবৈধ ডোনার',
+        'blood_group': 'UNKNOWN',
+        'gender': 'OTHER',
+        'phone': '999',
+        'consent_to_share': 1,
+        'district': 'ঢাকা',
+        'area': 'গুলশান',
+        'created_at': '2026-01-01T00:00:00Z',
+        'updated_at': '2026-01-01T00:00:00Z',
+      };
+
+      await repo.applyRemoteSync(
+        donors: [validRemote, invalidRemote],
+        logs: [],
+        deletedPhones: [],
+        syncedAt: '2026-01-01T00:00:00Z',
+      );
+
+      final donors = await repo.search(const DonorFilter());
+      expect(donors.length, 1);
+      expect(donors.first.phone, '01733333333');
+    });
+  });
 }
