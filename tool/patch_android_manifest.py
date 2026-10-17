@@ -31,18 +31,28 @@ INTENT = """    <intent>
 """
 
 
+PERMISSIONS = """    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+"""
+
+
 def patch_manifest() -> bool:
     if not MANIFEST.exists():
         print(f"warning: {MANIFEST} not found", file=sys.stderr)
         return False
     text = MANIFEST.read_text(encoding="utf-8")
-    if 'android:scheme="sms"' in text and 'android.intent.action.DIAL' in text:
-        print("manifest already patched")
-        return True
+    changed = False
 
-    if "<queries>" in text:
-        if "android.intent.action.DIAL" in text:
-            extra = """    <intent>
+    if "android.permission.INTERNET" not in text:
+        if "<application" in text:
+            text = text.replace("<application", PERMISSIONS + "    <application", 1)
+            changed = True
+            print("manifest patched with INTERNET and ACCESS_NETWORK_STATE permissions")
+
+    if 'android:scheme="sms"' not in text or 'android.intent.action.DIAL' not in text:
+        if "<queries>" in text:
+            if "android.intent.action.DIAL" in text:
+                extra = """    <intent>
         <action android:name="android.intent.action.VIEW" />
         <data android:scheme="sms" />
     </intent>
@@ -53,15 +63,19 @@ def patch_manifest() -> bool:
     <package android:name="com.whatsapp" />
     <package android:name="com.whatsapp.w4b" />
 """
-            text = text.replace("<queries>", "<queries>\n" + extra, 1)
+                text = text.replace("<queries>", "<queries>\n" + extra, 1)
+            else:
+                text = text.replace("<queries>", "<queries>\n" + INTENT, 1)
         else:
-            text = text.replace("<queries>", "<queries>\n" + INTENT, 1)
-    else:
-        block = "    <queries>\n" + INTENT + "    </queries>\n"
-        text = text.replace("</manifest>", block + "</manifest>", 1)
+            block = "    <queries>\n" + INTENT + "    </queries>\n"
+            text = text.replace("</manifest>", block + "</manifest>", 1)
+        changed = True
+        print("manifest patched with tel, sms, https, and whatsapp queries")
 
-    MANIFEST.write_text(text, encoding="utf-8")
-    print("manifest patched with tel, sms, https, and whatsapp queries")
+    if changed:
+        MANIFEST.write_text(text, encoding="utf-8")
+    else:
+        print("manifest already up to date")
     return True
 
 

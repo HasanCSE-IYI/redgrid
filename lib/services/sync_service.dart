@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -32,13 +33,32 @@ class SyncService {
 
   final DonorRepository _repo;
 
+  /// URL নরম্যালাইজেশন (https:// নিশ্চিত করে এবং বাড়তি স্ল্যাশ বা পাথ দূর করে)
+  static String normalizeUrl(String raw) {
+    var url = raw.trim();
+    if (url.isEmpty) return url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://$url';
+    }
+    while (url.endsWith('/')) {
+      url = url.substring(0, url.length - 1);
+    }
+    if (url.endsWith('/api/sync')) {
+      url = url.substring(0, url.length - '/api/sync'.length);
+    } else if (url.endsWith('/health')) {
+      url = url.substring(0, url.length - '/health'.length);
+    }
+    return url;
+  }
+
   /// একক বাই-ডাইরেকশনাল সিঙ্ক অপারেশন।
   /// Worker URL না থাকলে বা নেটওয়ার্ক ব্যর্থ হলে নিরাপদে ব্যর্থ হয়।
   Future<SyncResult> sync() async {
-    final url = await _repo.getSetting(AppConstants.settingCloudUrl);
-    if (url == null || url.trim().isEmpty) {
+    final rawUrl = await _repo.getSetting(AppConstants.settingCloudUrl);
+    if (rawUrl == null || rawUrl.trim().isEmpty) {
       return const SyncResult.noUrl();
     }
+    final url = normalizeUrl(rawUrl);
 
     final syncKey = await _repo.getSetting(AppConstants.settingSyncKey);
     final lastSyncedAt = await _repo.getSetting(AppConstants.settingLastSynced);
@@ -64,7 +84,7 @@ class SyncService {
           'X-Sync-Key': syncKey.trim(),
       };
 
-      final uri = Uri.parse('${url.trimRight().endsWith('/') ? url.substring(0, url.length - 1) : url}/api/sync');
+      final uri = Uri.parse('$url/api/sync');
 
       final response = await http
           .post(uri, headers: headers, body: jsonEncode(payload))
@@ -117,10 +137,15 @@ class SyncService {
         donorCount: remoteDonors.length,
         logCount: remoteLogs.length,
       );
-    } on SocketException {
+    } on SocketException catch (e) {
+      return SyncResult(
+        status: SyncStatus.failed,
+        errorMessage: 'ইন্টারনেট সংযোগ নেই বা সার্ভার পাওয়া যাচ্ছে না (${e.message})',
+      );
+    } on TimeoutException {
       return const SyncResult(
         status: SyncStatus.failed,
-        errorMessage: 'ইন্টারনেট সংযোগ নেই বা সার্ভার পাওয়া যাচ্ছে না',
+        errorMessage: 'সার্ভার রেসপন্স করতে অতিরিক্ত সময় নিচ্ছে (Timeout)',
       );
     } on HttpException catch (e) {
       return SyncResult(
@@ -135,23 +160,46 @@ class SyncService {
     }
   }
 
-  /// Health-check – Worker URL বৈধ কিনা যাচাই করে।
-  Future<bool> testConnection(String url, {String? syncKey}) async {
+  /// Health-check – বিস্তারিত ফলাফলসহ Worker URL পরীক্ষা করে।
+  Future<({bool success, String? error})> testConnectionDetails(String rawUrl, {String? syncKey}) async {
     try {
-      final uri = Uri.parse('${url.trimRight().endsWith('/') ? url.substring(0, url.length - 1) : url}/health');
+      final url = normalizeUrl(rawUrl);
+      if (url.isEmpty) {
+        return (success: false, error: 'URL প্রদান করুন');
+      }
+      final uri = Uri.parse('$url/health');
       final headers = <String, String>{
         if (syncKey != null && syncKey.trim().isNotEmpty)
           'X-Sync-Key': syncKey.trim(),
       };
       final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
-      return response.statusCode == 200;
-    } catch (_) {
-      return false;
+      if (response.statusCode == 200) {
+        return (success: true, error: null);
+      }
+      if (response.statusCode == 401) {
+        return (success: false, error: 'Unauthorized (401): Sync Key ভুল');
+      }
+      return (success: false, error: 'সার্ভার রেসপন্স কোড: ${response.statusCode}');
+    } on SocketException catch (e) {
+      return (success: false, error: 'সার্ভার সংযোগ ব্যর্থ (${e.message})');
+    } on TimeoutException {
+      return (success: false, error: 'টাইমআউট (১০ সেকেন্ডে রেসপন্স আসেনি)');
+    } on HttpException catch (e) {
+      return (success: false, error: 'HTTP ত্রুটি: ${e.message}');
+    } catch (e) {
+      return (success: false, error: e.toString());
     }
   }
 
+  /// Health-check – Worker URL বৈধ কিনা যাচাই করে।
+  Future<bool> testConnection(String url, {String? syncKey}) async {
+    final result = await testConnectionDetails(url, syncKey: syncKey);
+    return result.success;
+  }
+
   Future<void> saveSettings({required String url, String? syncKey}) async {
-    await _repo.setSetting(AppConstants.settingCloudUrl, url.trim());
+    final cleanUrl = normalizeUrl(url);
+    await _repo.setSetting(AppConstants.settingCloudUrl, cleanUrl);
     if (syncKey != null && syncKey.trim().isNotEmpty) {
       await _repo.setSetting(AppConstants.settingSyncKey, syncKey.trim());
     } else {

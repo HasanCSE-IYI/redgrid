@@ -621,7 +621,7 @@ class _SyncSettingsDialogState extends ConsumerState<_SyncSettingsDialog> {
     }
     setState(() => _testing = true);
     final svc = ref.read(syncServiceProvider);
-    final ok = await svc.testConnection(
+    final res = await svc.testConnectionDetails(
       _urlController.text.trim(),
       syncKey: _keyController.text.trim().isEmpty ? null : _keyController.text.trim(),
     );
@@ -629,8 +629,9 @@ class _SyncSettingsDialogState extends ConsumerState<_SyncSettingsDialog> {
     setState(() => _testing = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok ? '✅ সংযোগ সফল!' : '❌ সংযোগ ব্যর্থ। URL যাচাই করুন।'),
-        backgroundColor: ok ? Colors.green.shade700 : Colors.red.shade700,
+        content: Text(res.success ? '✅ সংযোগ সফল!' : '❌ ${res.error ?? "সংযোগ ব্যর্থ"}'),
+        backgroundColor: res.success ? Colors.green.shade700 : Colors.red.shade700,
+        duration: const Duration(seconds: 4),
       ),
     );
   }
