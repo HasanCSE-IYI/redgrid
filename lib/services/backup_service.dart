@@ -54,6 +54,14 @@ class BackupService {
 
   Future<File> writeBackupFile() async {
     final dir = await _tempDir();
+    try {
+      final oldFiles = dir.listSync().whereType<File>().where((f) => p.basename(f.path).startsWith('redgrid_backup_'));
+      for (final oldFile in oldFiles) {
+        try {
+          oldFile.deleteSync();
+        } catch (_) {}
+      }
+    } catch (_) {}
     final file = File(p.join(dir.path, 'redgrid_backup_${_stamp()}.json'));
     return file.writeAsString(jsonEncode(await buildBackup()), flush: true);
   }

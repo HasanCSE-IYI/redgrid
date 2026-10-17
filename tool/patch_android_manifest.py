@@ -58,6 +58,15 @@ def patch_manifest() -> bool:
         changed = True
         print("manifest patched with android:allowBackup=false")
 
+    if 'android:usesCleartextTraffic="true"' in text:
+        text = text.replace('android:usesCleartextTraffic="true"', 'android:usesCleartextTraffic="false"')
+        changed = True
+        print("manifest patched with android:usesCleartextTraffic=false")
+    elif "android:usesCleartextTraffic" not in text and "<application" in text:
+        text = text.replace("<application", '<application android:usesCleartextTraffic="false"', 1)
+        changed = True
+        print("manifest patched with android:usesCleartextTraffic=false")
+
     if 'android:scheme="sms"' not in text or 'android.intent.action.DIAL' not in text:
         if "<queries>" in text:
             if "android.intent.action.DIAL" in text:

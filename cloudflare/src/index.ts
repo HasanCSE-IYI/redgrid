@@ -77,6 +77,16 @@ function isRateLimited(ip: string): boolean {
   return entry.count > MAX_REQUESTS_PER_WINDOW;
 }
 
+// Timing-attack resistant string comparison
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let c = 0;
+  for (let i = 0; i < a.length; i++) {
+    c |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return c === 0;
+}
+
 function normalizePhone(input: unknown): string | null {
   if (typeof input !== "string") return null;
   let digits = input.replace(/\D/g, "");
@@ -187,11 +197,18 @@ function validateLog(l: any): { error?: string; log?: DonationLogRecord } {
   }
   
   const now = new Date().toISOString();
+  const nowMs = Date.now();
+  let createdAt = typeof l.created_at === "string" && l.created_at.length > 0 ? l.created_at : now;
+  const parsed = Date.parse(createdAt);
+  if (isNaN(parsed) || parsed > nowMs + MAX_FUTURE_DRIFT_MS) {
+    createdAt = now;
+  }
+
   return {
     log: {
       donor_phone: phone,
       donation_date: l.donation_date.trim(),
-      created_at: typeof l.created_at === "string" && l.created_at.length > 0 ? l.created_at : now,
+      created_at: createdAt,
     },
   };
 }
@@ -211,23 +228,25 @@ function errorResponse(message: string, status = 400): Response {
 }
 
 function verifyAuth(request: Request, env: Env): boolean {
-  const validKeys = new Set<string>();
-  validKeys.add(DEFAULT_APP_KEY);
+  const candidateKeys: string[] = [DEFAULT_APP_KEY];
   if (env.SYNC_KEY && env.SYNC_KEY.trim() !== "") {
-    validKeys.add(env.SYNC_KEY.trim());
+    candidateKeys.push(env.SYNC_KEY.trim());
   }
 
-  const xSyncKey = request.headers.get("X-Sync-Key");
-  if (xSyncKey && validKeys.has(xSyncKey.trim())) {
-    return true;
+  const xSyncKey = (request.headers.get("X-Sync-Key") || "").trim();
+  if (xSyncKey) {
+    for (const key of candidateKeys) {
+      if (constantTimeEqual(xSyncKey, key)) return true;
+    }
   }
 
   const authHeader = request.headers.get("Authorization");
   if (authHeader) {
     const parts = authHeader.split(" ");
     if (parts.length === 2 && parts[0].toLowerCase() === "bearer") {
-      if (validKeys.has(parts[1].trim())) {
-        return true;
+      const token = parts[1].trim();
+      for (const key of candidateKeys) {
+        if (constantTimeEqual(token, key)) return true;
       }
     }
   }
@@ -252,7 +271,7 @@ export default {
       return jsonResponse({
         status: "ok",
         app: "RedGrid Sync Server",
-        version: "1.2.0",
+        version: "1.3.0",
         timestamp: new Date().toISOString(),
       });
     }
@@ -269,7 +288,7 @@ export default {
         return errorResponse("Too many requests from this IP. Please wait a minute.", 429);
       }
 
-      // Authentication check
+      // Authentication check with constant-time verification
       if (!verifyAuth(request, env)) {
         return errorResponse("Unauthorized: Invalid or missing sync key", 401);
       }
@@ -281,7 +300,17 @@ export default {
       try {
         const body = (await request.json()) as SyncPayload;
         const now = new Date().toISOString();
-        const lastSyncedAt = body.last_synced_at ? body.last_synced_at.trim() : null;
+        const nowMs = Date.now();
+
+        // Validate and sanitize last_synced_at
+        let lastSyncedAt: string | null = null;
+        if (body.last_synced_at && typeof body.last_synced_at === "string") {
+          const trimmed = body.last_synced_at.trim();
+          const parsed = Date.parse(trimmed);
+          if (!isNaN(parsed) && parsed <= nowMs + MAX_FUTURE_DRIFT_MS) {
+            lastSyncedAt = trimmed;
+          }
+        }
 
         // Rate & Batch Limit Protection
         if (Array.isArray(body.donors) && body.donors.length > MAX_BATCH_SIZE) {
@@ -302,7 +331,10 @@ export default {
             if (result.error) {
               return errorResponse(`Validation error in donor: ${result.error}`, 400);
             }
-            validDonors.push(result.donor!);
+            // Only store donors with explicit consent_to_share
+            if (result.donor!.consent_to_share === 1) {
+              validDonors.push(result.donor!);
+            }
           }
         }
 
@@ -402,7 +434,7 @@ export default {
           await env.DB.batch(chunk);
         }
 
-        // D. Pull changes to send back to client
+        // D. Pull changes to send back to client (Only return consent_to_share = 1)
         let remoteDonors: unknown[] = [];
         let remoteDeleted: string[] = [];
         let remoteLogs: unknown[] = [];
@@ -414,7 +446,7 @@ export default {
                    district, area, last_donation_date, total_donations,
                    notes, created_at, updated_at
             FROM donors
-            WHERE updated_at > ? AND is_deleted = 0
+            WHERE updated_at > ? AND is_deleted = 0 AND consent_to_share = 1
             ORDER BY updated_at ASC
           `).bind(lastSyncedAt).all();
 
@@ -442,7 +474,7 @@ export default {
                    district, area, last_donation_date, total_donations,
                    notes, created_at, updated_at
             FROM donors
-            WHERE is_deleted = 0
+            WHERE is_deleted = 0 AND consent_to_share = 1
             ORDER BY name ASC
           `).all();
 
