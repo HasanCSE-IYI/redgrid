@@ -25,4 +25,9 @@ class AppConstants {
   static const settingCloudUrl = 'cloud_sync_url';
   static const settingSyncKey = 'cloud_sync_key';
   static const settingLastSynced = 'cloud_last_synced';
+
+  /// বিল্ট-ইন ক্লাউড সিঙ্ক ডিফল্ট
+  static const defaultCloudUrl = 'https://redgrid-sync.rauaha.workers.dev';
+  static const defaultSyncKey = '';
+  static const appAgentHeader = 'RedGrid/1.0';
 }

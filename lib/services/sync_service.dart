@@ -52,15 +52,23 @@ class SyncService {
   }
 
   /// একক বাই-ডাইরেকশনাল সিঙ্ক অপারেশন।
-  /// Worker URL না থাকলে বা নেটওয়ার্ক ব্যর্থ হলে নিরাপদে ব্যর্থ হয়।
+  /// ডিফল্টরূপে বিল্ট-ইন সার্ভার ব্যবহার করে; কাস্টম URL সেট থাকলে তা অগ্রাধিকার পায়।
   Future<SyncResult> sync() async {
-    final rawUrl = await _repo.getSetting(AppConstants.settingCloudUrl);
-    if (rawUrl == null || rawUrl.trim().isEmpty) {
+    final customUrl = await _repo.getSetting(AppConstants.settingCloudUrl);
+    final effectiveUrl = (customUrl != null && customUrl.trim().isNotEmpty)
+        ? customUrl.trim()
+        : AppConstants.defaultCloudUrl;
+
+    if (effectiveUrl.isEmpty) {
       return const SyncResult.noUrl();
     }
-    final url = normalizeUrl(rawUrl);
+    final url = normalizeUrl(effectiveUrl);
 
-    final syncKey = await _repo.getSetting(AppConstants.settingSyncKey);
+    final customKey = await _repo.getSetting(AppConstants.settingSyncKey);
+    final syncKey = (customKey != null && customKey.trim().isNotEmpty)
+        ? customKey.trim()
+        : (effectiveUrl == AppConstants.defaultCloudUrl ? AppConstants.defaultSyncKey : null);
+
     final lastSyncedAt = await _repo.getSetting(AppConstants.settingLastSynced);
 
     try {
@@ -80,6 +88,7 @@ class SyncService {
       // 3. Worker-এ পাঠান
       final headers = <String, String>{
         'Content-Type': 'application/json',
+        'X-RedGrid-App': AppConstants.appAgentHeader,
         if (syncKey != null && syncKey.trim().isNotEmpty)
           'X-Sync-Key': syncKey.trim(),
       };
@@ -163,14 +172,19 @@ class SyncService {
   /// Health-check – বিস্তারিত ফলাফলসহ Worker URL পরীক্ষা করে।
   Future<({bool success, String? error})> testConnectionDetails(String rawUrl, {String? syncKey}) async {
     try {
-      final url = normalizeUrl(rawUrl);
+      final effectiveUrl = rawUrl.trim().isEmpty ? AppConstants.defaultCloudUrl : rawUrl;
+      final url = normalizeUrl(effectiveUrl);
       if (url.isEmpty) {
         return (success: false, error: 'URL প্রদান করুন');
       }
       final uri = Uri.parse('$url/health');
+      final effectiveKey = (syncKey != null && syncKey.trim().isNotEmpty)
+          ? syncKey.trim()
+          : (effectiveUrl == AppConstants.defaultCloudUrl ? AppConstants.defaultSyncKey : null);
       final headers = <String, String>{
-        if (syncKey != null && syncKey.trim().isNotEmpty)
-          'X-Sync-Key': syncKey.trim(),
+        'X-RedGrid-App': AppConstants.appAgentHeader,
+        if (effectiveKey != null && effectiveKey.isNotEmpty)
+          'X-Sync-Key': effectiveKey,
       };
       final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
@@ -199,7 +213,12 @@ class SyncService {
 
   Future<void> saveSettings({required String url, String? syncKey}) async {
     final cleanUrl = normalizeUrl(url);
-    await _repo.setSetting(AppConstants.settingCloudUrl, cleanUrl);
+    if (cleanUrl == normalizeUrl(AppConstants.defaultCloudUrl)) {
+      // ডিফল্ট সার্ভার ব্যবহার করলে ওভাররাইড মুছে ফেলা হয়
+      await _repo.deleteSetting(AppConstants.settingCloudUrl);
+    } else {
+      await _repo.setSetting(AppConstants.settingCloudUrl, cleanUrl);
+    }
     if (syncKey != null && syncKey.trim().isNotEmpty) {
       await _repo.setSetting(AppConstants.settingSyncKey, syncKey.trim());
     } else {
@@ -207,16 +226,22 @@ class SyncService {
     }
   }
 
-  Future<void> clearSettings() async {
+  Future<void> resetToDefault() async {
     await _repo.deleteSetting(AppConstants.settingCloudUrl);
     await _repo.deleteSetting(AppConstants.settingSyncKey);
+  }
+
+  Future<void> clearSettings() async {
+    await resetToDefault();
     await _repo.deleteSetting(AppConstants.settingLastSynced);
   }
 
-  Future<({String? url, String? syncKey, String? lastSynced})> loadSettings() async {
-    final url = await _repo.getSetting(AppConstants.settingCloudUrl);
+  Future<({String url, String? syncKey, String? lastSynced, bool isCustom})> loadSettings() async {
+    final customUrl = await _repo.getSetting(AppConstants.settingCloudUrl);
+    final isCustom = customUrl != null && customUrl.trim().isNotEmpty;
+    final url = isCustom ? customUrl : AppConstants.defaultCloudUrl;
     final syncKey = await _repo.getSetting(AppConstants.settingSyncKey);
     final lastSynced = await _repo.getSetting(AppConstants.settingLastSynced);
-    return (url: url, syncKey: syncKey, lastSynced: lastSynced);
+    return (url: url, syncKey: syncKey, lastSynced: lastSynced, isCustom: isCustom);
   }
 }

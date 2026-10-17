@@ -34,15 +34,132 @@ interface SyncPayload {
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Sync-Key",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Sync-Key, X-RedGrid-App",
 };
+
+const SECURITY_HEADERS: Record<string, string> = {
+  ...CORS_HEADERS,
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "no-referrer",
+};
+
+const VALID_BLOOD_GROUPS = new Set(["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-", "Oh"]);
+const VALID_GENDERS = new Set(["MALE", "FEMALE"]);
+const BANGLADESH_PHONE_REGEX = /^01[3-9]\d{8}$/;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_BATCH_SIZE = 500;
+
+function normalizePhone(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  let digits = input.replace(/\D/g, "");
+  if (digits.length === 13 && digits.startsWith("880")) {
+    digits = digits.substring(2);
+  }
+  return BANGLADESH_PHONE_REGEX.test(digits) ? digits : null;
+}
+
+function validateDonor(d: any): { error?: string; donor?: DonorRecord } {
+  if (!d || typeof d !== "object") return { error: "Invalid donor object" };
+  
+  if (typeof d.name !== "string" || d.name.trim().length === 0 || d.name.trim().length > 80) {
+    return { error: "Donor name must be between 1 and 80 characters" };
+  }
+  
+  const blood = typeof d.blood_group === "string" ? d.blood_group.trim() : "";
+  if (!VALID_BLOOD_GROUPS.has(blood)) {
+    return { error: `Invalid blood group '${d.blood_group}'` };
+  }
+  
+  const gender = typeof d.gender === "string" ? d.gender.trim().toUpperCase() : "MALE";
+  if (!VALID_GENDERS.has(gender)) {
+    return { error: `Invalid gender '${d.gender}'` };
+  }
+  
+  const phone = normalizePhone(d.phone);
+  if (!phone) {
+    return { error: `Invalid Bangladeshi phone number '${d.phone}'` };
+  }
+  
+  if (typeof d.district !== "string" || d.district.trim().length === 0 || d.district.trim().length > 60) {
+    return { error: "District must be between 1 and 60 characters" };
+  }
+  
+  if (typeof d.area !== "string" || d.area.trim().length === 0 || d.area.trim().length > 60) {
+    return { error: "Area must be between 1 and 60 characters" };
+  }
+  
+  let consent = 0;
+  if (d.consent_to_share === 1 || d.consent_to_share === true || d.consent_to_share === "1") {
+    consent = 1;
+  }
+  
+  let lastDonation: string | null = null;
+  if (d.last_donation_date && typeof d.last_donation_date === "string" && d.last_donation_date.trim().isNotEmpty) {
+    const trimmedDate = d.last_donation_date.trim();
+    if (!DATE_REGEX.test(trimmedDate)) {
+      return { error: `Invalid last_donation_date '${d.last_donation_date}' (format must be YYYY-MM-DD)` };
+    }
+    lastDonation = trimmedDate;
+  }
+  
+  const total = typeof d.total_donations === "number" && d.total_donations >= 0
+    ? Math.floor(d.total_donations)
+    : 0;
+    
+  let notes: string | null = null;
+  if (d.notes && typeof d.notes === "string") {
+    const trimmedNotes = d.notes.trim();
+    if (trimmedNotes.length > 300) {
+      return { error: "Notes cannot exceed 300 characters" };
+    }
+    notes = trimmedNotes.length > 0 ? trimmedNotes : null;
+  }
+
+  const now = new Date().toISOString();
+  return {
+    donor: {
+      name: d.name.trim(),
+      blood_group: blood,
+      gender: gender,
+      phone: phone,
+      consent_to_share: consent,
+      district: d.district.trim(),
+      area: d.area.trim(),
+      last_donation_date: lastDonation,
+      total_donations: total,
+      notes: notes,
+      created_at: typeof d.created_at === "string" && d.created_at.length > 0 ? d.created_at : now,
+      updated_at: typeof d.updated_at === "string" && d.updated_at.length > 0 ? d.updated_at : now,
+    },
+  };
+}
+
+function validateLog(l: any): { error?: string; log?: DonationLogRecord } {
+  if (!l || typeof l !== "object") return { error: "Invalid log object" };
+  const phone = normalizePhone(l.donor_phone);
+  if (!phone) return { error: `Invalid donor phone in log: '${l.donor_phone}'` };
+  
+  if (typeof l.donation_date !== "string" || !DATE_REGEX.test(l.donation_date.trim())) {
+    return { error: `Invalid donation date '${l.donation_date}' (format must be YYYY-MM-DD)` };
+  }
+  
+  const now = new Date().toISOString();
+  return {
+    log: {
+      donor_phone: phone,
+      donation_date: l.donation_date.trim(),
+      created_at: typeof l.created_at === "string" && l.created_at.length > 0 ? l.created_at : now,
+    },
+  };
+}
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "Content-Type": "application/json",
-      ...CORS_HEADERS,
+      ...SECURITY_HEADERS,
     },
   });
 }
@@ -53,7 +170,7 @@ function errorResponse(message: string, status = 400): Response {
 
 function verifyAuth(request: Request, env: Env): boolean {
   if (!env.SYNC_KEY || env.SYNC_KEY.trim() === "") {
-    return true; // No key configured -> open sync
+    return true; // Open sync when no custom key configured in Worker
   }
 
   const authHeader = request.headers.get("Authorization");
@@ -83,7 +200,7 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
-        headers: CORS_HEADERS,
+        headers: SECURITY_HEADERS,
       });
     }
 
@@ -92,7 +209,7 @@ export default {
       return jsonResponse({
         status: "ok",
         app: "RedGrid Sync Server",
-        version: "1.0.0",
+        version: "1.1.0",
         timestamp: new Date().toISOString(),
       });
     }
@@ -116,11 +233,56 @@ export default {
         const now = new Date().toISOString();
         const lastSyncedAt = body.last_synced_at ? body.last_synced_at.trim() : null;
 
+        // Rate & Batch Limit Protection
+        if (Array.isArray(body.donors) && body.donors.length > MAX_BATCH_SIZE) {
+          return errorResponse(`Too many donors in one request (limit ${MAX_BATCH_SIZE})`, 400);
+        }
+        if (Array.isArray(body.logs) && body.logs.length > MAX_BATCH_SIZE) {
+          return errorResponse(`Too many logs in one request (limit ${MAX_BATCH_SIZE})`, 400);
+        }
+        if (Array.isArray(body.deleted_phones) && body.deleted_phones.length > MAX_BATCH_SIZE) {
+          return errorResponse(`Too many deleted phones in one request (limit ${MAX_BATCH_SIZE})`, 400);
+        }
+
+        // Validate and sanitize records before database operations
+        const validDonors: DonorRecord[] = [];
+        if (Array.isArray(body.donors) && body.donors.length > 0) {
+          for (const rawDonor of body.donors) {
+            const result = validateDonor(rawDonor);
+            if (result.error) {
+              return errorResponse(`Validation error in donor: ${result.error}`, 400);
+            }
+            validDonors.push(result.donor!);
+          }
+        }
+
+        const validLogs: DonationLogRecord[] = [];
+        if (Array.isArray(body.logs) && body.logs.length > 0) {
+          for (const rawLog of body.logs) {
+            const result = validateLog(rawLog);
+            if (result.error) {
+              return errorResponse(`Validation error in donation log: ${result.error}`, 400);
+            }
+            validLogs.push(result.log!);
+          }
+        }
+
+        const validDeletedPhones: string[] = [];
+        if (Array.isArray(body.deleted_phones) && body.deleted_phones.length > 0) {
+          for (const rawPhone of body.deleted_phones) {
+            const phone = normalizePhone(rawPhone);
+            if (!phone) {
+              return errorResponse(`Invalid phone number in deleted list: '${rawPhone}'`, 400);
+            }
+            validDeletedPhones.push(phone);
+          }
+        }
+
         const statements: D1PreparedStatement[] = [];
 
         // A. Process incoming deletions
-        if (Array.isArray(body.deleted_phones) && body.deleted_phones.length > 0) {
-          for (const phone of body.deleted_phones) {
+        if (validDeletedPhones.length > 0) {
+          for (const phone of validDeletedPhones) {
             statements.push(
               env.DB.prepare(
                 "UPDATE donors SET is_deleted = 1, updated_at = ? WHERE phone = ?"
@@ -133,8 +295,8 @@ export default {
         }
 
         // B. Process incoming donors (Upsert with Last-Write-Wins on updated_at)
-        if (Array.isArray(body.donors) && body.donors.length > 0) {
-          for (const d of body.donors) {
+        if (validDonors.length > 0) {
+          for (const d of validDonors) {
             statements.push(
               env.DB.prepare(`
                 INSERT INTO donors (
@@ -158,30 +320,30 @@ export default {
               `).bind(
                 d.name,
                 d.blood_group,
-                d.gender || "MALE",
+                d.gender,
                 d.phone,
-                d.consent_to_share ? 1 : 0,
+                d.consent_to_share,
                 d.district,
                 d.area,
-                d.last_donation_date || null,
-                d.total_donations || 0,
-                d.notes || null,
-                d.created_at || now,
-                d.updated_at || now
+                d.last_donation_date,
+                d.total_donations,
+                d.notes,
+                d.created_at,
+                d.updated_at
               )
             );
           }
         }
 
         // C. Process incoming donation logs
-        if (Array.isArray(body.logs) && body.logs.length > 0) {
-          for (const log of body.logs) {
+        if (validLogs.length > 0) {
+          for (const log of validLogs) {
             statements.push(
               env.DB.prepare(`
                 INSERT INTO donation_logs (donor_phone, donation_date, created_at)
                 VALUES (?, ?, ?)
                 ON CONFLICT(donor_phone, donation_date) DO NOTHING
-              `).bind(log.donor_phone, log.donation_date, log.created_at || now)
+              `).bind(log.donor_phone, log.donation_date, log.created_at)
             );
           }
         }

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:redgrid/core/constants.dart';
 import 'package:redgrid/services/sync_service.dart';
 
 void main() {
@@ -48,6 +49,13 @@ void main() {
 
     test('handles empty string safely', () {
       expect(SyncService.normalizeUrl(''), '');
+    });
+
+    test('normalizes AppConstants.defaultCloudUrl correctly', () {
+      expect(
+        SyncService.normalizeUrl(AppConstants.defaultCloudUrl),
+        'https://redgrid-sync.rauaha.workers.dev',
+      );
     });
   });
 }

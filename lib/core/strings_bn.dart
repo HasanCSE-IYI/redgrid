@@ -160,6 +160,12 @@ class Strings {
   static const cloudSyncLastSynced = 'শেষ সিঙ্ক';
   static const cloudSyncNeverSynced = 'এখনো সিঙ্ক হয়নি';
   static const cloudSyncConnected = 'ক্লাউড সংযুক্ত';
-  static const cloudSyncNotConfigured = 'ক্লাউড সংযুক্ত নয়';
   static const cloudSyncUrlRequired = 'Worker URL আবশ্যক';
+  static const cloudSyncBuiltIn = 'বিল্ট-ইন ক্লাউড ব্যাকএন্ড (সক্রিয়)';
+  static const cloudSyncCustom = 'কাস্টম সার্ভার ব্যবহার হচ্ছে';
+  static const cloudSyncSyncNow = 'এখনই সিঙ্ক করুন';
+  static const cloudSyncResetDefault = 'ডিফল্ট সার্ভারে ফেরত যান';
+  static const cloudSyncResetDone = 'ডিফল্ট সার্ভার পুনঃস্থাপিত হয়েছে';
+  static const cloudSyncAdvancedSettings = 'উন্নত সার্ভার সেটিংস (ঐচ্ছিক)';
+  static const cloudSyncBuiltInDesc = 'RedGrid এর সুরক্ষিত বিল্ট-ইন সার্ভারের মাধ্যমে ডেটা অটোমেটিক সিঙ্ক হচ্ছে।';
 }

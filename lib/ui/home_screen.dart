@@ -40,8 +40,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _checkSyncUrl() async {
     final repo = ref.read(donorRepositoryProvider);
     final url = await repo.getSetting(AppConstants.settingCloudUrl);
+    final effective = (url != null && url.trim().isNotEmpty)
+        ? url
+        : AppConstants.defaultCloudUrl;
     if (mounted) {
-      setState(() => _hasSyncUrl = url != null && url.trim().isNotEmpty);
+      setState(() => _hasSyncUrl = effective.trim().isNotEmpty);
     }
   }
 
@@ -583,6 +586,8 @@ class _SyncSettingsDialogState extends ConsumerState<_SyncSettingsDialog> {
   final _formKey = GlobalKey<FormState>();
   bool _loading = true;
   bool _testing = false;
+  bool _isCustom = false;
+  bool _showAdvanced = false;
   String? _lastSynced;
 
   @override
@@ -605,24 +610,23 @@ class _SyncSettingsDialogState extends ConsumerState<_SyncSettingsDialog> {
     final settings = await svc.loadSettings();
     if (!mounted) return;
     setState(() {
-      _urlController.text = settings.url ?? '';
+      _urlController.text = settings.url;
       _keyController.text = settings.syncKey ?? '';
       _lastSynced = settings.lastSynced;
+      _isCustom = settings.isCustom;
+      _showAdvanced = settings.isCustom;
       _loading = false;
     });
   }
 
   Future<void> _test() async {
-    if (_urlController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(Strings.cloudSyncUrlRequired)),
-      );
-      return;
-    }
     setState(() => _testing = true);
     final svc = ref.read(syncServiceProvider);
+    final testUrl = _urlController.text.trim().isEmpty
+        ? AppConstants.defaultCloudUrl
+        : _urlController.text.trim();
     final res = await svc.testConnectionDetails(
-      _urlController.text.trim(),
+      testUrl,
       syncKey: _keyController.text.trim().isEmpty ? null : _keyController.text.trim(),
     );
     if (!mounted) return;
@@ -648,14 +652,25 @@ class _SyncSettingsDialogState extends ConsumerState<_SyncSettingsDialog> {
     widget.onSaved();
   }
 
-  Future<void> _clear() async {
+  Future<void> _resetToDefault() async {
     final svc = ref.read(syncServiceProvider);
-    await svc.clearSettings();
+    await svc.resetToDefault();
     if (!mounted) return;
-    Navigator.of(context).pop();
+    setState(() {
+      _urlController.text = AppConstants.defaultCloudUrl;
+      _keyController.text = '';
+      _isCustom = false;
+      _showAdvanced = false;
+    });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text(Strings.cloudSyncClear)),
+      const SnackBar(content: Text(Strings.cloudSyncResetDone)),
     );
+    widget.onSaved();
+  }
+
+  Future<void> _syncNow() async {
+    Navigator.of(context).pop();
+    widget.onSaved();
   }
 
   @override
@@ -672,92 +687,177 @@ class _SyncSettingsDialogState extends ConsumerState<_SyncSettingsDialog> {
     }
 
     return AlertDialog(
-      title: const Text(Strings.cloudSyncTitle),
+      title: Row(
+        children: [
+          Icon(Icons.cloud_sync, color: theme.colorScheme.primary),
+          const SizedBox(width: 8),
+          const Text(Strings.cloudSyncTitle),
+        ],
+      ),
       content: SizedBox(
         width: double.maxFinite,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _urlController,
-                decoration: const InputDecoration(
-                  labelText: Strings.cloudSyncUrl,
-                  hintText: Strings.cloudSyncUrlHint,
-                  prefixIcon: Icon(Icons.cloud_outlined),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Status Banner
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _isCustom
+                        ? theme.colorScheme.secondaryContainer.withOpacity(0.4)
+                        : Colors.green.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _isCustom
+                          ? theme.colorScheme.secondary.withOpacity(0.3)
+                          : Colors.green.withOpacity(0.4),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isCustom ? Icons.tune : Icons.check_circle_outline,
+                        color: _isCustom ? theme.colorScheme.secondary : Colors.green.shade700,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isCustom ? Strings.cloudSyncCustom : Strings.cloudSyncBuiltIn,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: _isCustom ? theme.colorScheme.secondary : Colors.green.shade800,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _isCustom
+                                  ? _urlController.text
+                                  : Strings.cloudSyncBuiltInDesc,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                keyboardType: TextInputType.url,
-                autocorrect: false,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return Strings.cloudSyncUrlRequired;
-                  }
-                  final uri = Uri.tryParse(v.trim());
-                  if (uri == null || !uri.hasScheme) {
-                    return 'সঠিক URL দিন (https:// দিয়ে শুরু করুন)';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _keyController,
-                decoration: const InputDecoration(
-                  labelText: Strings.cloudSyncKey,
-                  hintText: Strings.cloudSyncKeyHint,
-                  prefixIcon: Icon(Icons.key_outlined),
-                ),
-                obscureText: true,
-                autocorrect: false,
-              ),
-              if (_lastSynced != null) ...[
                 const SizedBox(height: 12),
+
+                // Last synced info
                 Row(
                   children: [
-                    const Icon(Icons.history, size: 14),
-                    const SizedBox(width: 4),
+                    const Icon(Icons.history, size: 16),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        '${Strings.cloudSyncLastSynced}: ${_lastSynced!.substring(0, 19).replaceAll('T', ' ')}',
+                        _lastSynced != null
+                            ? '${Strings.cloudSyncLastSynced}: ${_lastSynced!.substring(0, 19).replaceAll('T', ' ')}'
+                            : Strings.cloudSyncNeverSynced,
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 14),
+
+                // Sync Now Primary Action
+                FilledButton.icon(
+                  onPressed: _syncNow,
+                  icon: const Icon(Icons.sync),
+                  label: const Text(Strings.cloudSyncSyncNow),
+                ),
+                const SizedBox(height: 8),
+
+                // Advanced Settings Toggle
+                TextButton.icon(
+                  onPressed: () => setState(() => _showAdvanced = !_showAdvanced),
+                  icon: Icon(_showAdvanced ? Icons.expand_less : Icons.expand_more, size: 18),
+                  label: const Text(Strings.cloudSyncAdvancedSettings),
+                ),
+
+                if (_showAdvanced) ...[
+                  const Divider(),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: _urlController,
+                    decoration: const InputDecoration(
+                      labelText: Strings.cloudSyncUrl,
+                      hintText: Strings.cloudSyncUrlHint,
+                      prefixIcon: Icon(Icons.cloud_outlined),
+                    ),
+                    keyboardType: TextInputType.url,
+                    autocorrect: false,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return Strings.cloudSyncUrlRequired;
+                      }
+                      final uri = Uri.tryParse(v.trim());
+                      if (uri == null || !uri.hasScheme) {
+                        return 'সঠিক URL দিন (https:// দিয়ে শুরু করুন)';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _keyController,
+                    decoration: const InputDecoration(
+                      labelText: Strings.cloudSyncKey,
+                      hintText: Strings.cloudSyncKeyHint,
+                      prefixIcon: Icon(Icons.key_outlined),
+                    ),
+                    obscureText: true,
+                    autocorrect: false,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _testing ? null : _test,
+                          icon: _testing
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.wifi_tethering, size: 16),
+                          label: const Text(Strings.cloudSyncTest),
+                        ),
+                      ),
+                      if (_isCustom) ...[
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: _resetToDefault,
+                          child: const Text(Strings.cloudSyncResetDefault),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
               ],
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _testing ? null : _test,
-                icon: _testing
-                    ? const SizedBox(
-                        width: 16, height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.wifi_tethering),
-                label: const Text(Strings.cloudSyncTest),
-              ),
-            ],
+            ),
           ),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: _clear,
-          child: Text(
-            Strings.cloudSyncClear,
-            style: TextStyle(color: theme.colorScheme.error),
-          ),
-        ),
-        TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text(Strings.cancel),
         ),
-        FilledButton(
-          onPressed: _save,
-          child: const Text(Strings.cloudSyncSave),
-        ),
+        if (_showAdvanced)
+          FilledButton(
+            onPressed: _save,
+            child: const Text(Strings.cloudSyncSave),
+          ),
       ],
     );
   }
