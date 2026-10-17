@@ -138,4 +138,28 @@ class Strings {
   static const errDate = 'তারিখ সঠিক নয় বা ভবিষ্যতের';
   static const errTotal = 'মোট দানের সংখ্যা সঠিক নয়';
   static const errNotes = 'নোট খুব বড় (সর্বোচ্চ ৩০০ অক্ষর)';
+
+  // ক্লাউড সিঙ্ক (Cloud Sync)
+  static const cloudSync = 'ক্লাউড সিঙ্ক';
+  static const cloudSyncTitle = 'ক্লাউড সিঙ্ক সেটিংস';
+  static const cloudSyncUrl = 'Worker URL';
+  static const cloudSyncUrlHint = 'https://your-worker.workers.dev';
+  static const cloudSyncKey = 'Sync Key (ঐচ্ছিক)';
+  static const cloudSyncKeyHint = 'গোপন পাসওয়ার্ড (না থাকলে ফাঁকা রাখুন)';
+  static const cloudSyncSave = 'সংরক্ষণ ও সিঙ্ক করুন';
+  static const cloudSyncTest = 'পরীক্ষা করুন';
+  static const cloudSyncClear = 'সিঙ্ক সংযোগ বাতিল';
+  static const cloudSyncing = 'সিঙ্ক হচ্ছে…';
+  static const cloudSyncDone = 'সিঙ্ক সম্পন্ন হয়েছে';
+  static const cloudSyncFailed = 'সিঙ্ক ব্যর্থ হয়েছে';
+  static const cloudSyncNoUrl = 'Worker URL সেট করা নেই। সিঙ্ক বাটনে ট্যাপ করে সেট করুন।';
+  static const cloudSyncOffline = 'ইন্টারনেট সংযোগ নেই';
+  static String cloudSyncSuccess(int donors, int logs) =>
+      'সিঙ্ক সম্পন্ন: $donors জন ডোনার, $logs টি লগ আপডেট হয়েছে';
+  static String cloudSyncError(String msg) => 'সিঙ্ক ত্রুটি: $msg';
+  static const cloudSyncLastSynced = 'শেষ সিঙ্ক';
+  static const cloudSyncNeverSynced = 'এখনো সিঙ্ক হয়নি';
+  static const cloudSyncConnected = 'ক্লাউড সংযুক্ত';
+  static const cloudSyncNotConfigured = 'ক্লাউড সংযুক্ত নয়';
+  static const cloudSyncUrlRequired = 'Worker URL আবশ্যক';
 }

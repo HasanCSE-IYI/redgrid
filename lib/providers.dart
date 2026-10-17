@@ -4,6 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'data/donor.dart';
 import 'data/donor_repository.dart';
 import 'services/backup_service.dart';
+import 'services/sync_service.dart';
 
 /// main() এ খোলা ডেটাবেস দিয়ে override করা হয়।
 final databaseProvider = Provider<Database>(
@@ -96,3 +97,30 @@ final donationDatesProvider =
   return ref.watch(donorRepositoryProvider).getDonationDates(donorId);
 });
 
+// ==========================================
+// Cloud Sync
+// ==========================================
+
+final syncServiceProvider =
+    Provider<SyncService>((ref) => SyncService(ref.watch(donorRepositoryProvider)));
+
+class SyncStatusNotifier extends Notifier<SyncResult> {
+  @override
+  SyncResult build() => const SyncResult.idle();
+
+  Future<SyncResult> sync() async {
+    state = const SyncResult(status: SyncStatus.syncing);
+    final result = await ref.read(syncServiceProvider).sync();
+    state = result;
+    if (result.isSuccess) {
+      ref.invalidate(donorListProvider);
+      ref.invalidate(donorStatsProvider);
+    }
+    return result;
+  }
+
+  void reset() => state = const SyncResult.idle();
+}
+
+final syncStatusProvider =
+    NotifierProvider<SyncStatusNotifier, SyncResult>(SyncStatusNotifier.new);

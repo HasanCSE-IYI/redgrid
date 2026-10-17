@@ -133,7 +133,14 @@ class DonorRepository {
 
   Future<int> insert(Donor donor) async {
     try {
-      return await _db.insert(AppConstants.tableDonors, donor.toMap());
+      return await _db.transaction((txn) async {
+        await txn.delete(
+          AppConstants.tableDeleted,
+          where: 'phone = ?',
+          whereArgs: [donor.phone],
+        );
+        return await txn.insert(AppConstants.tableDonors, donor.toMap());
+      });
     } on DatabaseException catch (e) {
       if (e.isUniqueConstraintError()) throw const DuplicatePhoneException();
       rethrow;
@@ -155,7 +162,23 @@ class DonorRepository {
   }
 
   Future<void> delete(int id) async {
-    await _db.delete(AppConstants.tableDonors, where: 'id = ?', whereArgs: [id]);
+    await _db.transaction((txn) async {
+      final rows = await txn.query(
+        AppConstants.tableDonors,
+        columns: ['phone'],
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      if (rows.isNotEmpty) {
+        final phone = rows.first['phone'] as String;
+        await txn.insert(
+          AppConstants.tableDeleted,
+          {'phone': phone, 'deleted_at': isoNow()},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      await txn.delete(AppConstants.tableDonors, where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   /// এক লেনদেনে: একই তারিখের লগ থাকলে থামে, নইলে লগ যোগ করে শেষ তারিখ ও মোট সংখ্যা হালনাগাদ করে।
@@ -290,6 +313,203 @@ class DonorRepository {
         },
         where: 'id = ?',
         whereArgs: [donorId],
+      );
+    });
+  }
+
+  // ==========================================
+  // App Settings (Key-Value)
+  // ==========================================
+
+  Future<String?> getSetting(String key) async {
+    final rows = await _db.query(
+      AppConstants.tableSettings,
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['value'] as String?;
+  }
+
+  Future<void> setSetting(String key, String value) async {
+    await _db.insert(
+      AppConstants.tableSettings,
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> deleteSetting(String key) async {
+    await _db.delete(
+      AppConstants.tableSettings,
+      where: 'key = ?',
+      whereArgs: [key],
+    );
+  }
+
+  // ==========================================
+  // Cloud Sync Helpers
+  // ==========================================
+
+  Future<List<Map<String, dynamic>>> getDonorsForSync({String? since}) async {
+    final rows = await _db.query(
+      AppConstants.tableDonors,
+      columns: [
+        'name',
+        'blood_group',
+        'gender',
+        'phone',
+        'consent_to_share',
+        'district',
+        'area',
+        'last_donation_date',
+        'total_donations',
+        'notes',
+        'created_at',
+        'updated_at',
+      ],
+      where: since != null ? 'updated_at > ?' : null,
+      whereArgs: since != null ? [since] : null,
+    );
+    return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getLogsForSync({String? since}) async {
+    final sql = '''
+      SELECT d.phone AS donor_phone, l.donation_date, l.created_at
+      FROM ${AppConstants.tableLogs} l
+      JOIN ${AppConstants.tableDonors} d ON l.donor_id = d.id
+      ${since != null ? 'WHERE l.created_at > ?' : ''}
+    ''';
+    final rows = await _db.rawQuery(sql, since != null ? [since] : null);
+    return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+  }
+
+  Future<List<String>> getDeletedPhonesForSync() async {
+    final rows = await _db.query(AppConstants.tableDeleted, columns: ['phone']);
+    return rows.map((r) => r['phone'] as String).toList();
+  }
+
+  Future<void> applyRemoteSync({
+    required List<Map<String, dynamic>> donors,
+    required List<Map<String, dynamic>> logs,
+    required List<String> deletedPhones,
+    required String syncedAt,
+  }) async {
+    await _db.transaction((txn) async {
+      // 1. Process deletions
+      for (final phone in deletedPhones) {
+        await txn.delete(AppConstants.tableDonors, where: 'phone = ?', whereArgs: [phone]);
+        await txn.delete(AppConstants.tableDeleted, where: 'phone = ?', whereArgs: [phone]);
+      }
+
+      // 2. Process donors (Last-Write-Wins on updated_at)
+      for (final remote in donors) {
+        final phone = remote['phone'] as String;
+        final remoteUpdatedAt = remote['updated_at'] as String;
+
+        final existing = await txn.query(
+          AppConstants.tableDonors,
+          columns: ['id', 'updated_at'],
+          where: 'phone = ?',
+          whereArgs: [phone],
+        );
+
+        final donorMap = <String, Object?>{
+          'name': remote['name'],
+          'blood_group': remote['blood_group'],
+          'gender': remote['gender'] ?? 'MALE',
+          'phone': phone,
+          'consent_to_share':
+              (remote['consent_to_share'] == 1 || remote['consent_to_share'] == true) ? 1 : 0,
+          'district': remote['district'],
+          'area': remote['area'],
+          'last_donation_date': remote['last_donation_date'],
+          'total_donations': remote['total_donations'] ?? 0,
+          'notes': remote['notes'],
+          'created_at': remote['created_at'],
+          'updated_at': remoteUpdatedAt,
+        };
+
+        if (existing.isEmpty) {
+          await txn.delete(AppConstants.tableDeleted, where: 'phone = ?', whereArgs: [phone]);
+          await txn.insert(AppConstants.tableDonors, donorMap);
+        } else {
+          final localUpdatedAt = existing.first['updated_at'] as String;
+          final localId = existing.first['id'] as int;
+          if (remoteUpdatedAt.compareTo(localUpdatedAt) >= 0) {
+            await txn.update(
+              AppConstants.tableDonors,
+              donorMap,
+              where: 'id = ?',
+              whereArgs: [localId],
+            );
+          }
+        }
+      }
+
+      // 3. Process donation logs
+      for (final log in logs) {
+        final donorPhone = log['donor_phone'] as String;
+        final donationDate = log['donation_date'] as String;
+        final createdAt = log['created_at'] as String;
+
+        final donorRows = await txn.query(
+          AppConstants.tableDonors,
+          columns: ['id'],
+          where: 'phone = ?',
+          whereArgs: [donorPhone],
+        );
+
+        if (donorRows.isNotEmpty) {
+          final donorId = donorRows.first['id'] as int;
+          await txn.insert(
+            AppConstants.tableLogs,
+            {
+              'donor_id': donorId,
+              'donation_date': donationDate,
+              'created_at': createdAt,
+            },
+            conflictAlgorithm: ConflictAlgorithm.ignore,
+          );
+
+          // Reconcile total and max donation date
+          final count = Sqflite.firstIntValue(await txn.rawQuery(
+            'SELECT COUNT(*) FROM ${AppConstants.tableLogs} WHERE donor_id = ?',
+            [donorId],
+          )) ?? 0;
+          final maxRow = await txn.rawQuery(
+            'SELECT MAX(donation_date) as max_date FROM ${AppConstants.tableLogs} WHERE donor_id = ?',
+            [donorId],
+          );
+          final maxDate = maxRow.isNotEmpty ? (maxRow.first['max_date'] as String?) : null;
+
+          await txn.update(
+            AppConstants.tableDonors,
+            {
+              'total_donations': count,
+              'last_donation_date': maxDate,
+            },
+            where: 'id = ?',
+            whereArgs: [donorId],
+          );
+        }
+      }
+
+      // 4. Clean up acknowledged deletions
+      await txn.delete(
+        AppConstants.tableDeleted,
+        where: 'deleted_at <= ?',
+        whereArgs: [syncedAt],
+      );
+
+      // 5. Store last_synced_at setting
+      await txn.insert(
+        AppConstants.tableSettings,
+        {'key': AppConstants.settingLastSynced, 'value': syncedAt},
+        conflictAlgorithm: ConflictAlgorithm.replace,
       );
     });
   }

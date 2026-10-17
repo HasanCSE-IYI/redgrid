@@ -57,12 +57,41 @@ class AppDatabase {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE ${AppConstants.tableDeleted} (
+        phone TEXT PRIMARY KEY,
+        deleted_at TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE ${AppConstants.tableSettings} (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    ''');
+
     await db.execute(
         'CREATE INDEX idx_donors_lookup ON ${AppConstants.tableDonors} (blood_group, district, area)');
     await db.execute(
         'CREATE INDEX idx_logs_donor_date ON ${AppConstants.tableLogs} (donor_id, donation_date)');
   }
 
-  /// ভবিষ্যতে স্কিমা বদলালে এখানে ধাপে ধাপে মাইগ্রেশন যোগ হবে।
-  static Future<void> upgrade(Database db, int oldVersion, int newVersion) async {}
+  /// স্কিমা ভার্সন মাইগ্রেশন
+  static Future<void> upgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS ${AppConstants.tableDeleted} (
+          phone TEXT PRIMARY KEY,
+          deleted_at TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS ${AppConstants.tableSettings} (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      ''');
+    }
+  }
 }

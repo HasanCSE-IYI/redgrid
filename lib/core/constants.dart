@@ -11,7 +11,7 @@ class AppConstants {
   static const maleCooldownDays = 90;
   static const femaleCooldownDays = 120;
 
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
   static const maxNameLength = 80;
   static const maxPlaceLength = 60;
@@ -19,4 +19,10 @@ class AppConstants {
 
   static const tableDonors = 'donors';
   static const tableLogs = 'donation_logs';
+  static const tableDeleted = 'deleted_donors';
+  static const tableSettings = 'app_settings';
+
+  static const settingCloudUrl = 'cloud_sync_url';
+  static const settingSyncKey = 'cloud_sync_key';
+  static const settingLastSynced = 'cloud_last_synced';
 }
