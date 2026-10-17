@@ -66,7 +66,12 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
 
   Future<void> _share() async {
     final text = _buildBroadcastText();
-    await Share.share(text, subject: '${Strings.emergencyRequest} - $_selectedGroup');
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: '${Strings.emergencyRequest} - $_selectedGroup',
+      ),
+    );
   }
 
   void _copy() {

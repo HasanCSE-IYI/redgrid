@@ -60,9 +60,11 @@ class BackupService {
 
   Future<void> shareBackup() async {
     final file = await writeBackupFile();
-    await Share.shareXFiles(
-      [XFile(file.path, mimeType: 'application/json')],
-      text: Strings.backupShareText,
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path, mimeType: 'application/json')],
+        text: Strings.backupShareText,
+      ),
     );
   }
 
