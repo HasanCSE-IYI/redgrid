@@ -57,8 +57,8 @@ Future<void> restoreBackup(BuildContext context, WidgetRef ref) async {
       type: FileType.custom,
       allowedExtensions: const ['json'],
     );
-    if (picked == null || picked.files.isEmpty) return;
-    final path = picked.files.first.path;
+    if (picked.isEmpty) return;
+    final path = picked.first.path;
     if (path == null) return;
 
     final text = await File(path).readAsString();
