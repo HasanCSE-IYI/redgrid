@@ -51,6 +51,7 @@ const BANGLADESH_PHONE_REGEX = /^01[3-9]\d{8}$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_BATCH_SIZE = 500;
 const MAX_FUTURE_DRIFT_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_PAYLOAD_BYTES = 2 * 1024 * 1024; // 2 MB
 
 // Sliding-window IP Rate Limiter
 interface RateLimitEntry {
@@ -87,6 +88,11 @@ function constantTimeEqual(a: string, b: string): boolean {
   return c === 0;
 }
 
+function cleanString(input: unknown): string {
+  if (typeof input !== "string") return "";
+  return input.replace(/\0/g, "").trim();
+}
+
 function normalizePhone(input: unknown): string | null {
   if (typeof input !== "string") return null;
   let digits = input.replace(/\D/g, "");
@@ -99,16 +105,17 @@ function normalizePhone(input: unknown): string | null {
 function validateDonor(d: any): { error?: string; donor?: DonorRecord } {
   if (!d || typeof d !== "object") return { error: "Invalid donor object" };
   
-  if (typeof d.name !== "string" || d.name.trim().length === 0 || d.name.trim().length > 80) {
+  const name = cleanString(d.name);
+  if (name.length === 0 || name.length > 80) {
     return { error: "Donor name must be between 1 and 80 characters" };
   }
   
-  const blood = typeof d.blood_group === "string" ? d.blood_group.trim() : "";
+  const blood = cleanString(d.blood_group);
   if (!VALID_BLOOD_GROUPS.has(blood)) {
     return { error: `Invalid blood group '${d.blood_group}'` };
   }
   
-  const gender = typeof d.gender === "string" ? d.gender.trim().toUpperCase() : "MALE";
+  const gender = cleanString(d.gender).toUpperCase() || "MALE";
   if (!VALID_GENDERS.has(gender)) {
     return { error: `Invalid gender '${d.gender}'` };
   }
@@ -118,11 +125,13 @@ function validateDonor(d: any): { error?: string; donor?: DonorRecord } {
     return { error: `Invalid Bangladeshi phone number '${d.phone}'` };
   }
   
-  if (typeof d.district !== "string" || d.district.trim().length === 0 || d.district.trim().length > 60) {
+  const district = cleanString(d.district);
+  if (district.length === 0 || district.length > 60) {
     return { error: "District must be between 1 and 60 characters" };
   }
   
-  if (typeof d.area !== "string" || d.area.trim().length === 0 || d.area.trim().length > 60) {
+  const area = cleanString(d.area);
+  if (area.length === 0 || area.length > 60) {
     return { error: "Area must be between 1 and 60 characters" };
   }
   
@@ -133,7 +142,7 @@ function validateDonor(d: any): { error?: string; donor?: DonorRecord } {
   
   let lastDonation: string | null = null;
   if (d.last_donation_date && typeof d.last_donation_date === "string" && d.last_donation_date.trim().length > 0) {
-    const trimmedDate = d.last_donation_date.trim();
+    const trimmedDate = cleanString(d.last_donation_date);
     if (!DATE_REGEX.test(trimmedDate)) {
       return { error: `Invalid last_donation_date '${d.last_donation_date}' (format must be YYYY-MM-DD)` };
     }
@@ -146,7 +155,7 @@ function validateDonor(d: any): { error?: string; donor?: DonorRecord } {
     
   let notes: string | null = null;
   if (d.notes && typeof d.notes === "string") {
-    const trimmedNotes = d.notes.trim();
+    const trimmedNotes = cleanString(d.notes);
     if (trimmedNotes.length > 300) {
       return { error: "Notes cannot exceed 300 characters" };
     }
@@ -171,16 +180,16 @@ function validateDonor(d: any): { error?: string; donor?: DonorRecord } {
 
   return {
     donor: {
-      name: d.name.trim(),
+      name,
       blood_group: blood,
-      gender: gender,
-      phone: phone,
+      gender,
+      phone,
       consent_to_share: consent,
-      district: d.district.trim(),
-      area: d.area.trim(),
+      district,
+      area,
       last_donation_date: lastDonation,
       total_donations: total,
-      notes: notes,
+      notes,
       created_at: createdAt,
       updated_at: updatedAt,
     },
@@ -192,7 +201,8 @@ function validateLog(l: any): { error?: string; log?: DonationLogRecord } {
   const phone = normalizePhone(l.donor_phone);
   if (!phone) return { error: `Invalid donor phone in log: '${l.donor_phone}'` };
   
-  if (typeof l.donation_date !== "string" || !DATE_REGEX.test(l.donation_date.trim())) {
+  const donationDate = cleanString(l.donation_date);
+  if (!DATE_REGEX.test(donationDate)) {
     return { error: `Invalid donation date '${l.donation_date}' (format must be YYYY-MM-DD)` };
   }
   
@@ -207,7 +217,7 @@ function validateLog(l: any): { error?: string; log?: DonationLogRecord } {
   return {
     log: {
       donor_phone: phone,
-      donation_date: l.donation_date.trim(),
+      donation_date: donationDate,
       created_at: createdAt,
     },
   };
@@ -271,7 +281,7 @@ export default {
       return jsonResponse({
         status: "ok",
         app: "RedGrid Sync Server",
-        version: "1.3.0",
+        version: "1.4.0",
         timestamp: new Date().toISOString(),
       });
     }
@@ -280,6 +290,12 @@ export default {
     if (url.pathname === "/api/sync") {
       if (request.method !== "POST") {
         return errorResponse("Method not allowed", 405);
+      }
+
+      // Payload size check
+      const contentLength = request.headers.get("Content-Length");
+      if (contentLength && parseInt(contentLength, 10) > MAX_PAYLOAD_BYTES) {
+        return errorResponse("Payload too large (limit 2MB)", 413);
       }
 
       // Rate limit check
