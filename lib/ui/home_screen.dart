@@ -11,6 +11,7 @@ import '../core/strings_bn.dart';
 import '../domain/compatibility.dart';
 import '../providers.dart';
 import '../services/sync_service.dart';
+import 'about_dialog.dart';
 import 'data_tools.dart';
 import 'donor_card.dart';
 import 'donor_form_screen.dart';
@@ -86,20 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       case _MenuAction.restore:
         restoreBackup(context, ref);
       case _MenuAction.about:
-        showAboutDialog(
-          context: context,
-          applicationName: Strings.appTitle,
-          applicationIcon: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              'assets/icon/app_icon.png',
-              width: 44,
-              height: 44,
-              fit: BoxFit.cover,
-            ),
-          ),
-          children: const [Text(Strings.aboutBody)],
-        );
+        AboutAppDialog.show(context);
     }
   }
 

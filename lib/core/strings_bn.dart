@@ -114,8 +114,16 @@ class Strings {
   static const backup = 'ব্যাকআপ';
   static const restore = 'রিস্টোর';
   static const about = 'সম্পর্কে';
-  static const aboutBody =
-      'RedGrid ইন্টারনেট ছাড়াই রক্তদাতার তালিকা রাখে। সব তথ্য শুধু এই ফোনে থাকে।';
+  static const developedBy = 'Developed by Hasan Abdullah';
+  static const devPhone = '+8801727328200';
+  static const devWhatsappMessage =
+      'আসসালামু আলাইকুম, RedGrid প্রজেক্টে সাদাকায়ে জারিয়া সহায়তা প্রসঙ্গে যোগাযোগ করছি।';
+  static const sadaqahSupportTitle = 'সাদাকায়ে জারিয়া হিসেবে সাপোর্ট';
+  static const sadaqahSupportDesc =
+      'জরুরি মুহূর্তে রক্ত সন্ধান সহজ করে মানুষের জীবন বাঁচাতে এই প্রজেক্টটি বিনামূল্যে উন্মুক্ত রাখা হয়েছে। এর উন্নয়ন ও ধারাবাহিক সার্বিক সহায়তায় আপনিও সাদাকায়ে জারিয়া হিসেবে পাশে থাকতে পারেন।';
+  static const supportedChannels = 'WhatsApp • বিকাশ • নগদ';
+  static const copyNumber = 'নম্বর কপি';
+  static const numberCopied = 'নম্বর কপি করা হয়েছে: +8801727328200';
   static const backupWarning =
       'ব্যাকআপ ফাইল এনক্রিপ্টেড নয় এবং এতে সবার ফোন নম্বর আছে। ফাইলটি নিরাপদ রাখুন।';
   static const backupShareText = 'RedGrid ব্যাকআপ (এনক্রিপ্টেড নয়, নিরাপদ রাখুন)';
