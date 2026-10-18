@@ -21,6 +21,7 @@ class RedGridApp extends StatelessWidget {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: 'NotoSansBengali',
       colorScheme: colorScheme,
       scaffoldBackgroundColor: isDark ? const Color(0xFF121417) : const Color(0xFFF9FAFB),
       appBarTheme: AppBarTheme(

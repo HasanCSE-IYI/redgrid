@@ -36,6 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   late final TextEditingController _searchController;
   bool _hasSyncUrl = false;
   bool _isFabExtended = true;
+  bool _isCompactView = false;
 
   void _openAddDonor() {
     HapticFeedback.lightImpact();
@@ -630,7 +631,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   filter.district != null ||
                                   filter.area != null ||
                                   filter.eligibleOnly ||
-                                  filter.query.isNotEmpty)
+                                  filter.query.isNotEmpty) ...[
                                 InkWell(
                                   onTap: () {
                                     HapticFeedback.lightImpact();
@@ -650,6 +651,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                   ),
                                 ),
+                                const SizedBox(width: 8),
+                              ],
+                              Tooltip(
+                                message: _isCompactView ? Strings.viewDetailed : Strings.viewCompact,
+                                child: InkWell(
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() => _isCompactView = !_isCompactView);
+                                  },
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _isCompactView ? Icons.view_agenda_outlined : Icons.view_headline_rounded,
+                                          size: 15,
+                                          color: theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _isCompactView ? Strings.viewDetailed : Strings.viewCompact,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -659,6 +698,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         itemBuilder: (context, index) => DonorCard(
                           key: ValueKey(list[index].id),
                           donor: list[index],
+                          isCompact: _isCompactView,
                         ),
                       ),
                       // নিচের কার্ড ঢাকা পড়া ঠেকাতে অতিরিক্ত ফাঁকা জায়গা ও ডিসক্লেইমার।

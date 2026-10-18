@@ -97,6 +97,8 @@ class Strings {
   static const livesSavedEstimate = 'জীবন রক্ষায় ভূমিকা';
   static const livesImpactText = 'জন মানুষের জীবন বাঁচাতে সহায়তা করেছেন';
   static const clearFilter = 'ফিল্টার মুছুন';
+  static const viewDetailed = 'বিস্তারিত ভিউ';
+  static const viewCompact = 'কমপ্যাক্ট ভিউ';
   static String donorsFound(Object count) => '$count জন ডোনার পাওয়া গেছে';
 
   // হোম ড্যাশবোর্ড পরিসংখ্যান (Summary Stats)
