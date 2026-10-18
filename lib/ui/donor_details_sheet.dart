@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../app.dart';
 import '../core/date_format.dart';
@@ -8,10 +7,10 @@ import '../core/digits.dart';
 import '../core/strings_bn.dart';
 import '../data/donor.dart';
 import '../data/donor_repository.dart';
-import '../domain/eligibility.dart';
 import '../domain/milestones.dart';
 import '../providers.dart';
 import '../services/contact_service.dart';
+import 'blood_widgets.dart';
 
 /// ডোনার প্রোফাইল, সরাসরি যোগাযোগ এবং রক্তদানের ইতিহাস টাইমলাইন।
 class DonorDetailsSheet extends ConsumerStatefulWidget {
@@ -36,35 +35,25 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
   bool _busy = false;
 
   Future<void> _call() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final phone = widget.donor.phone;
-    try {
-      final ok = await launchUrl(Uri(scheme: 'tel', path: phone));
-      if (!ok && mounted) {
-        messenger.showSnackBar(const SnackBar(content: Text(Strings.callFailed)));
-      }
-    } catch (_) {
-      if (mounted) {
-        messenger.showSnackBar(const SnackBar(content: Text(Strings.callFailed)));
-      }
+    final ok = await ContactService.makeCall(widget.donor.phone);
+    if (!ok && mounted) {
+      AppNotificationToast.show(context, message: Strings.callFailed, color: kCrimson);
     }
   }
 
   Future<void> _sendWhatsApp() async {
-    final messenger = ScaffoldMessenger.of(context);
     final donor = widget.donor;
-    final message = ContactService.composeDonorMessage(
+    final ok = await ContactService.contactDonorWhatsApp(
       donorName: donor.name,
       bloodGroup: donor.bloodGroup,
+      phone: donor.phone,
     );
-    final ok = await ContactService.openWhatsApp(phone: donor.phone, message: message);
     if (!ok && mounted) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.whatsappFailed)));
+      AppNotificationToast.show(context, message: Strings.whatsappFailed, color: kCrimson);
     }
   }
 
   Future<void> _sendSms() async {
-    final messenger = ScaffoldMessenger.of(context);
     final donor = widget.donor;
     final message = ContactService.composeDonorMessage(
       donorName: donor.name,
@@ -72,61 +61,55 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
     );
     final ok = await ContactService.openSms(phone: donor.phone, message: message);
     if (!ok && mounted) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.smsFailed)));
+      AppNotificationToast.show(context, message: Strings.smsFailed, color: kCrimson);
     }
   }
 
   Future<void> _addDonationDate() async {
     final donor = widget.donor;
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: DateTime(1970),
-      lastDate: now,
-    );
+    final picked = await pickDonationDate(context, firstDate: DateTime(1970));
     if (picked == null || !mounted) return;
 
-    final messenger = ScaffoldMessenger.of(context);
     final notifier = ref.read(donorListProvider.notifier);
     final date = isoDate(picked);
 
     setState(() => _busy = true);
     try {
       final result = await notifier.markDonated(donor.id!, date);
-      messenger.hideCurrentSnackBar();
+      if (!mounted) return;
       if (result == MarkDonatedResult.alreadyLogged) {
-        messenger.showSnackBar(const SnackBar(content: Text(Strings.alreadyLogged)));
+        AppNotificationToast.show(context, message: Strings.alreadyLogged);
       } else {
-        messenger.showSnackBar(const SnackBar(content: Text(Strings.donationSaved)));
+        AppNotificationToast.show(context, message: Strings.donationSaved);
       }
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.genericError)));
+      if (mounted) {
+        AppNotificationToast.show(context, message: Strings.genericError, color: kCrimson);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _deleteDate(String date) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(Strings.deleteLogConfirmTitle),
-        content: const Text(Strings.deleteLogConfirmBody),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(Strings.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text(Strings.delete)),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: Strings.deleteLogConfirmTitle,
+      message: Strings.deleteLogConfirmBody,
+      confirmLabel: Strings.delete,
+      isDestructive: true,
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
-    final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(donorListProvider.notifier).deleteDonationDate(widget.donor.id!, date);
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.logDeleted)));
+      if (mounted) {
+        AppNotificationToast.show(context, message: Strings.logDeleted);
+      }
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.genericError)));
+      if (mounted) {
+        AppNotificationToast.show(context, message: Strings.genericError, color: kCrimson);
+      }
     }
   }
 
@@ -142,12 +125,6 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
         widget.donor;
 
     final milestone = DonorMilestone.forCount(donor.totalDonations);
-    final result = Eligibility.check(
-      gender: donor.gender,
-      lastDonationDate: donor.lastDonationDate,
-      today: DateTime.now(),
-    );
-
     final historyAsync = ref.watch(donationDatesProvider(donor.id!));
 
     return DraggableScrollableSheet(
@@ -170,20 +147,10 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: kCrimson,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    donor.bloodGroup,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                BloodGroupBadge(
+                  bloodGroup: donor.bloodGroup,
+                  size: 52,
+                  fontSize: 20,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -237,35 +204,9 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
           ),
           const SizedBox(height: 12),
           // যোগ্যতা স্ট্যাটাস ব্যানার
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: (result.eligible ? kEligibleGreen : kWaitSlate).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: (result.eligible ? kEligibleGreen : kWaitSlate).withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  result.eligible ? Icons.check_circle : Icons.hourglass_bottom,
-                  color: result.eligible ? kEligibleGreen : kWaitSlate,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    result.eligible
-                        ? (donor.lastDonationDate == null ? Strings.eligibleNoDate : Strings.eligible)
-                        : Strings.eligibleIn(result.daysLeft, formatDateBn(result.nextEligibleDate!)),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: result.eligible ? kEligibleGreen : kWaitSlate,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          EligibilityBanner(
+            gender: donor.gender,
+            lastDonationDate: donor.lastDonationDate,
           ),
           const SizedBox(height: 12),
           // যোগাযোগ বোতামসমূহ

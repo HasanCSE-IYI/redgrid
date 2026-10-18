@@ -3,6 +3,8 @@ class AppConstants {
   AppConstants._();
 
   static const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-', 'Oh'];
+  static const positiveBloodGroups = ['A+', 'B+', 'O+', 'AB+'];
+  static const negativeBloodGroups = ['A-', 'B-', 'O-', 'AB-', 'Oh'];
 
   static const genderMale = 'MALE';
   static const genderFemale = 'FEMALE';

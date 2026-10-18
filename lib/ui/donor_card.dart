@@ -13,8 +13,10 @@ import '../domain/eligibility.dart';
 import '../domain/milestones.dart';
 import '../providers.dart';
 import '../services/contact_service.dart';
+import 'blood_widgets.dart';
 import 'donor_details_sheet.dart';
 import 'donor_form_screen.dart';
+import 'notification_center_sheet.dart';
 
 enum _CardAction { details, copyPhone, edit, delete }
 
@@ -31,33 +33,34 @@ class _DonorCardState extends ConsumerState<DonorCard> {
   bool _busy = false;
 
   Future<void> _call() async {
-    HapticFeedback.mediumImpact();
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final ok = await launchUrl(Uri(scheme: 'tel', path: widget.donor.phone));
-      if (!ok && mounted) messenger.showSnackBar(const SnackBar(content: Text(Strings.callFailed)));
-    } catch (_) {
-      if (mounted) messenger.showSnackBar(const SnackBar(content: Text(Strings.callFailed)));
+    final ok = await ContactService.makeCall(widget.donor.phone);
+    if (!ok && mounted) {
+      AppNotificationToast.show(
+        context,
+        message: Strings.callFailed,
+        icon: Icons.call_end_rounded,
+        color: kCrimson,
+      );
     }
   }
 
   Future<void> _whatsapp() async {
-    HapticFeedback.lightImpact();
-    final messenger = ScaffoldMessenger.of(context);
     final donor = widget.donor;
-    final message = ContactService.composeDonorMessage(
+    final ok = await ContactService.contactDonorWhatsApp(
+      phone: donor.phone,
       donorName: donor.name,
       bloodGroup: donor.bloodGroup,
     );
-    final ok = await ContactService.openWhatsApp(phone: donor.phone, message: message);
     if (!ok && mounted) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.whatsappFailed)));
+      AppNotificationToast.show(
+        context,
+        message: Strings.whatsappFailed,
+        icon: Icons.chat_bubble_outline_rounded,
+      );
     }
   }
 
   Future<void> _sms() async {
-    HapticFeedback.lightImpact();
-    final messenger = ScaffoldMessenger.of(context);
     final donor = widget.donor;
     final message = ContactService.composeDonorMessage(
       donorName: donor.name,
@@ -65,7 +68,11 @@ class _DonorCardState extends ConsumerState<DonorCard> {
     );
     final ok = await ContactService.openSms(phone: donor.phone, message: message);
     if (!ok && mounted) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.smsFailed)));
+      AppNotificationToast.show(
+        context,
+        message: Strings.smsFailed,
+        icon: Icons.sms_failed_rounded,
+      );
     }
   }
 
@@ -74,18 +81,10 @@ class _DonorCardState extends ConsumerState<DonorCard> {
   }
 
   Future<void> _donatedToday() async {
-    HapticFeedback.selectionClick();
-    final donor = widget.donor;
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: DateTime(1970),
-      lastDate: now,
-    );
+    final picked = await pickDonationDate(context);
     if (picked == null || !mounted) return;
 
-    final messenger = ScaffoldMessenger.of(context);
+    final donor = widget.donor;
     final notifier = ref.read(donorListProvider.notifier);
     final previousLast = donor.lastDonationDate;
     final date = isoDate(picked);
@@ -93,11 +92,18 @@ class _DonorCardState extends ConsumerState<DonorCard> {
     setState(() => _busy = true);
     try {
       final result = await notifier.markDonated(donor.id!, date);
-      messenger.hideCurrentSnackBar();
+      if (!mounted) return;
       if (result == MarkDonatedResult.alreadyLogged) {
-        messenger.showSnackBar(const SnackBar(content: Text(Strings.alreadyLogged)));
+        AppNotificationToast.show(
+          context,
+          message: Strings.alreadyLogged,
+          icon: Icons.info_outline_rounded,
+        );
       } else {
-        messenger.showSnackBar(SnackBar(
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           content: const Text(Strings.donationSaved),
           action: SnackBarAction(
             label: Strings.undo,
@@ -106,31 +112,46 @@ class _DonorCardState extends ConsumerState<DonorCard> {
         ));
       }
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.genericError)));
+      if (mounted) {
+        AppNotificationToast.show(
+          context,
+          message: Strings.genericError,
+          icon: Icons.error_outline_rounded,
+          color: kCrimson,
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
   Future<void> _delete() async {
-    final messenger = ScaffoldMessenger.of(context);
-    final notifier = ref.read(donorListProvider.notifier);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text(Strings.deleteTitle),
-        content: const Text(Strings.deleteBody),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(Strings.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text(Strings.delete)),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: Strings.deleteTitle,
+      message: Strings.deleteBody,
+      confirmLabel: Strings.delete,
+      isDestructive: true,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     try {
-      await notifier.remove(widget.donor.id!);
+      await ref.read(donorListProvider.notifier).remove(widget.donor.id!);
+      if (mounted) {
+        AppNotificationToast.show(
+          context,
+          message: Strings.donorDeleted,
+          icon: Icons.delete_outline_rounded,
+        );
+      }
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.genericError)));
+      if (mounted) {
+        AppNotificationToast.show(
+          context,
+          message: Strings.genericError,
+          icon: Icons.error_outline_rounded,
+          color: kCrimson,
+        );
+      }
     }
   }
 
@@ -139,10 +160,11 @@ class _DonorCardState extends ConsumerState<DonorCard> {
       case _CardAction.details:
         _showDetails();
       case _CardAction.copyPhone:
-        HapticFeedback.lightImpact();
-        Clipboard.setData(ClipboardData(text: widget.donor.phone));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(Strings.phoneCopied), duration: Duration(seconds: 2)),
+        ContactService.copyToClipboard(widget.donor.phone);
+        AppNotificationToast.show(
+          context,
+          message: Strings.phoneCopied,
+          icon: Icons.copy_rounded,
         );
       case _CardAction.edit:
         Navigator.of(context).push(
@@ -153,72 +175,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
     }
   }
 
-  Widget _buildStatusPill(EligibilityResult result, bool isDark) {
-    if (result.eligible) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1B5E20).withValues(alpha: 0.35) : const Color(0xFFE8F5E9),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isDark ? const Color(0xFF2E7D32).withValues(alpha: 0.6) : const Color(0xFFA5D6A7),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: const BoxDecoration(
-                color: Color(0xFF2E7D32),
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              widget.donor.lastDonationDate == null ? Strings.eligibleNoDate : Strings.readyToDonate,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B5E20),
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white10 : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isDark ? Colors.white12 : Colors.grey.shade300,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.hourglass_bottom_rounded,
-              size: 13,
-              color: isDark ? Colors.grey.shade400 : kWaitSlate,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              Strings.eligibleIn(result.daysLeft, formatDateBn(result.nextEligibleDate!)),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.grey.shade300 : kWaitSlate,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -228,12 +185,6 @@ class _DonorCardState extends ConsumerState<DonorCard> {
     final selectedBloodGroup = ref.watch(filterProvider.select((f) => f.bloodGroup));
     final isCompatibleMatch = selectedBloodGroup != null && selectedBloodGroup != donor.bloodGroup;
     final milestone = DonorMilestone.forCount(donor.totalDonations);
-
-    final result = Eligibility.check(
-      gender: donor.gender,
-      lastDonationDate: donor.lastDonationDate,
-      today: DateTime.now(),
-    );
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -415,7 +366,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                 runSpacing: 6,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  _buildStatusPill(result, isDark),
+                  EligibilityPill(gender: donor.gender, lastDonationDate: donor.lastDonationDate),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(

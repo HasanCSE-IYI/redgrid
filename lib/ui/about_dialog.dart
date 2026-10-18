@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../app.dart';
 import '../core/strings_bn.dart';
 import '../services/contact_service.dart';
+import 'blood_widgets.dart';
 
 /// কাস্টম 'সম্পর্কে' ডায়ালগ (লাইসেন্স ছাড়া, ডেভেলপার ও সাদাকায়ে জারিয়া সাপোর্ট কার্ডসহ)।
 class AboutAppDialog extends StatelessWidget {
@@ -18,36 +17,29 @@ class AboutAppDialog extends StatelessWidget {
   }
 
   Future<void> _call(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final ok = await launchUrl(Uri(scheme: 'tel', path: Strings.devPhone));
-      if (!ok) {
-        messenger.showSnackBar(const SnackBar(content: Text(Strings.callFailed)));
-      }
-    } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.callFailed)));
+    final ok = await ContactService.makeCall(Strings.devPhone);
+    if (!ok && context.mounted) {
+      AppNotificationToast.show(context, message: Strings.callFailed, color: kCrimson);
     }
   }
 
   Future<void> _whatsapp(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
     final ok = await ContactService.openWhatsApp(
       phone: Strings.devPhone,
       message: Strings.devWhatsappMessage,
     );
-    if (!ok) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.whatsappFailed)));
+    if (!ok && context.mounted) {
+      AppNotificationToast.show(context, message: Strings.whatsappFailed, color: kCrimson);
     }
   }
 
   Future<void> _copy(BuildContext context) async {
-    await Clipboard.setData(const ClipboardData(text: Strings.devPhone));
+    await ContactService.copyToClipboard(Strings.devPhone);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(Strings.numberCopied),
-          duration: Duration(seconds: 2),
-        ),
+      AppNotificationToast.show(
+        context,
+        message: Strings.numberCopied,
+        icon: Icons.copy_rounded,
       );
     }
   }

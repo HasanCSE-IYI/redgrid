@@ -104,4 +104,37 @@ class ContactService {
       return false;
     }
   }
+
+  /// ফোন কল ডায়াল চালু করা
+  static Future<bool> makeCall(String phone) async {
+    HapticFeedback.lightImpact();
+    final uri = Uri(scheme: 'tel', path: phone);
+    try {
+      return await launchUrl(uri);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// টেক্সট ক্লিপবোর্ডে কপি করা
+  static Future<void> copyToClipboard(String text) async {
+    HapticFeedback.lightImpact();
+    await Clipboard.setData(ClipboardData(text: text));
+  }
+
+  /// ডোনারকে মার্জিত বার্তাসহ সরাসরি WhatsApp ওপেন করা
+  static Future<bool> contactDonorWhatsApp({
+    required String phone,
+    required String donorName,
+    required String bloodGroup,
+    String? patientHospital,
+  }) async {
+    final message = composeDonorMessage(
+      donorName: donorName,
+      bloodGroup: bloodGroup,
+      patientHospital: patientHospital,
+    );
+    return openWhatsApp(phone: phone, message: message);
+  }
 }
+

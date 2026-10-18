@@ -11,6 +11,7 @@ import '../core/strings_bn.dart';
 import '../data/donor.dart';
 import '../data/donor_repository.dart';
 import '../providers.dart';
+import 'blood_widgets.dart';
 import 'suggest_field.dart';
 
 class DonorFormScreen extends ConsumerStatefulWidget {
@@ -23,9 +24,6 @@ class DonorFormScreen extends ConsumerStatefulWidget {
 }
 
 class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
-  static const _positiveGroups = ['A+', 'B+', 'O+', 'AB+'];
-  static const _negativeGroups = ['A-', 'B-', 'O-', 'AB-', 'Oh'];
-
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _phone;
@@ -72,14 +70,13 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
     DateTime initial = parseIsoDate(_lastDate) ?? now;
     if (initial.isBefore(first)) initial = first;
     if (initial.isAfter(now)) initial = now;
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await pickDonationDate(
+      context,
       initialDate: initial,
       firstDate: first,
       lastDate: now,
     );
-    if (picked != null) {
-      HapticFeedback.lightImpact();
+    if (picked != null && mounted) {
       setState(() => _lastDate = isoDate(picked));
     }
   }
@@ -107,7 +104,6 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
       updatedAt: stamp,
     );
 
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     final notifier = ref.read(donorListProvider.notifier);
 
@@ -120,9 +116,13 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
       }
       navigator.pop();
     } on DuplicatePhoneException {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.duplicatePhone)));
+      if (mounted) {
+        AppNotificationToast.show(context, message: Strings.duplicatePhone, color: kCrimson);
+      }
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text(Strings.genericError)));
+      if (mounted) {
+        AppNotificationToast.show(context, message: Strings.genericError, color: kCrimson);
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -175,15 +175,15 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                       children: [
                         Row(
                           children: [
-                            for (int i = 0; i < _positiveGroups.length; i++) ...[
+                            for (int i = 0; i < AppConstants.positiveBloodGroups.length; i++) ...[
                               if (i > 0) const SizedBox(width: 8),
                               Expanded(
                                 child: _BloodGroupFormChip(
-                                  group: _positiveGroups[i],
-                                  isSelected: state.value == _positiveGroups[i],
+                                  group: AppConstants.positiveBloodGroups[i],
+                                  isSelected: state.value == AppConstants.positiveBloodGroups[i],
                                   onTap: () {
                                     HapticFeedback.selectionClick();
-                                    final g = _positiveGroups[i];
+                                    final g = AppConstants.positiveBloodGroups[i];
                                     _bloodGroup = g;
                                     state.didChange(g);
                                   },
@@ -195,15 +195,15 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            for (int i = 0; i < _negativeGroups.length; i++) ...[
+                            for (int i = 0; i < AppConstants.negativeBloodGroups.length; i++) ...[
                               if (i > 0) const SizedBox(width: 6),
                               Expanded(
                                 child: _BloodGroupFormChip(
-                                  group: _negativeGroups[i],
-                                  isSelected: state.value == _negativeGroups[i],
+                                  group: AppConstants.negativeBloodGroups[i],
+                                  isSelected: state.value == AppConstants.negativeBloodGroups[i],
                                   onTap: () {
                                     HapticFeedback.selectionClick();
-                                    final g = _negativeGroups[i];
+                                    final g = AppConstants.negativeBloodGroups[i];
                                     _bloodGroup = g;
                                     state.didChange(g);
                                   },

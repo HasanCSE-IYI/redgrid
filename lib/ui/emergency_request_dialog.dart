@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -8,6 +7,7 @@ import '../core/constants.dart';
 import '../core/strings_bn.dart';
 import '../providers.dart';
 import '../services/contact_service.dart';
+import 'blood_widgets.dart';
 
 /// জরুরি রক্তের আবেদনের জন্য পোস্ট প্রস্তুতকরণ ও সামঞ্জস্যপূর্ণ ডোনার খোঁজার ডায়ালগ।
 class EmergencyRequestDialog extends ConsumerStatefulWidget {
@@ -74,12 +74,16 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
     );
   }
 
-  void _copy() {
+  Future<void> _copy() async {
     final text = _buildBroadcastText();
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text(Strings.postCopied), duration: Duration(seconds: 2)),
-    );
+    await ContactService.copyToClipboard(text);
+    if (mounted) {
+      AppNotificationToast.show(
+        context,
+        message: Strings.postCopied,
+        icon: Icons.copy_rounded,
+      );
+    }
   }
 
   void _findMatchingDonors() {
