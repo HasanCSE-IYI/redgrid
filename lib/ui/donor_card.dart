@@ -31,6 +31,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
   bool _busy = false;
 
   Future<void> _call() async {
+    HapticFeedback.mediumImpact();
     final messenger = ScaffoldMessenger.of(context);
     try {
       final ok = await launchUrl(Uri(scheme: 'tel', path: widget.donor.phone));
@@ -41,6 +42,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
   }
 
   Future<void> _whatsapp() async {
+    HapticFeedback.lightImpact();
     final messenger = ScaffoldMessenger.of(context);
     final donor = widget.donor;
     final message = ContactService.composeDonorMessage(
@@ -54,6 +56,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
   }
 
   Future<void> _sms() async {
+    HapticFeedback.lightImpact();
     final messenger = ScaffoldMessenger.of(context);
     final donor = widget.donor;
     final message = ContactService.composeDonorMessage(
@@ -71,6 +74,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
   }
 
   Future<void> _donatedToday() async {
+    HapticFeedback.selectionClick();
     final donor = widget.donor;
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -135,6 +139,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
       case _CardAction.details:
         _showDetails();
       case _CardAction.copyPhone:
+        HapticFeedback.lightImpact();
         Clipboard.setData(ClipboardData(text: widget.donor.phone));
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(Strings.phoneCopied), duration: Duration(seconds: 2)),
@@ -148,10 +153,78 @@ class _DonorCardState extends ConsumerState<DonorCard> {
     }
   }
 
+  Widget _buildStatusPill(EligibilityResult result, bool isDark) {
+    if (result.eligible) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1B5E20).withValues(alpha: 0.35) : const Color(0xFFE8F5E9),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2E7D32).withValues(alpha: 0.6) : const Color(0xFFA5D6A7),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: const BoxDecoration(
+                color: Color(0xFF2E7D32),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              widget.donor.lastDonationDate == null ? Strings.eligibleNoDate : Strings.readyToDonate,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: isDark ? const Color(0xFF81C784) : const Color(0xFF1B5E20),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white10 : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isDark ? Colors.white12 : Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.hourglass_bottom_rounded,
+              size: 13,
+              color: isDark ? Colors.grey.shade400 : kWaitSlate,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              Strings.eligibleIn(result.daysLeft, formatDateBn(result.nextEligibleDate!)),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.grey.shade300 : kWaitSlate,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final donor = widget.donor;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final selectedBloodGroup = ref.watch(filterProvider.select((f) => f.bloodGroup));
     final isCompatibleMatch = selectedBloodGroup != null && selectedBloodGroup != donor.bloodGroup;
     final milestone = DonorMilestone.forCount(donor.totalDonations);
@@ -162,70 +235,81 @@ class _DonorCardState extends ConsumerState<DonorCard> {
       today: DateTime.now(),
     );
 
-    final String statusText;
-    final IconData statusIcon;
-    final Color statusColor;
-    if (result.eligible) {
-      statusText = donor.lastDonationDate == null ? Strings.eligibleNoDate : Strings.eligible;
-      statusIcon = Icons.check_circle;
-      statusColor = kEligibleGreen;
-    } else {
-      statusText = Strings.eligibleIn(result.daysLeft, formatDateBn(result.nextEligibleDate!));
-      statusIcon = Icons.hourglass_bottom;
-      statusColor = kWaitSlate;
-    }
-
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      elevation: 1.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isCompatibleMatch
+              ? Colors.amber.shade400
+              : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: isCompatibleMatch ? 1.4 : 1.0,
+        ),
+      ),
       child: InkWell(
         onTap: _showDetails,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 8, 8),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 1. Header Row: Blood Group Badge + Name/Location + 3-Dot Menu
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: kCrimson,
-                          borderRadius: BorderRadius.circular(8),
+                  // Blood Group Container
+                  Container(
+                    width: 52,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: kCrimson,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: kCrimson.withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
-                        child: Text(
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
                           donor.bloodGroup,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                      ),
-                      if (isCompatibleMatch) ...[
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.shade100,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            Strings.compatibleBadge,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber.shade900,
+                        if (isCompatibleMatch) ...[
+                          const SizedBox(height: 2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade300,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: const Text(
+                              'ম্যাচ',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF5D4037),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                   const SizedBox(width: 12),
+
+                  // Name, Milestone & Location
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,122 +319,192 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                             Flexible(
                               child: Text(
                                 donor.name,
-                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              milestone.badgeIcon,
-                              style: const TextStyle(fontSize: 14),
-                              textScaler: TextScaler.noScaling,
+                            Tooltip(
+                              message: milestone.title,
+                              child: Text(
+                                milestone.badgeIcon,
+                                style: const TextStyle(fontSize: 14),
+                                textScaler: TextScaler.noScaling,
+                              ),
                             ),
                           ],
                         ),
-                        Text('${donor.area}, ${donor.district}', style: theme.textTheme.bodyMedium),
-                        Text(
-                          donor.phone,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w500,
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 14,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                '${donor.area}, ${donor.district}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 13,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        InkWell(
+                          onTap: () => _onAction(_CardAction.copyPhone),
+                          borderRadius: BorderRadius.circular(4),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 1),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  donor.phone,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.copy_rounded,
+                                  size: 12,
+                                  color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: Strings.call,
-                        icon: const Icon(Icons.call, size: 20),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: _call,
-                      ),
-                      IconButton(
-                        tooltip: Strings.whatsapp,
-                        icon: const Icon(Icons.chat_bubble_outline, size: 20, color: Color(0xFF25D366)),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: _whatsapp,
-                      ),
-                      IconButton(
-                        tooltip: Strings.sms,
-                        icon: const Icon(Icons.sms_outlined, size: 20),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: _sms,
-                      ),
-                      PopupMenuButton<_CardAction>(
-                        tooltip: Strings.menu,
-                        onSelected: _onAction,
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(value: _CardAction.details, child: Text(Strings.donorDetails)),
-                          PopupMenuItem(value: _CardAction.copyPhone, child: Text(Strings.copyPhone)),
-                          PopupMenuItem(value: _CardAction.edit, child: Text(Strings.edit)),
-                          PopupMenuItem(value: _CardAction.delete, child: Text(Strings.delete)),
-                        ],
-                      ),
+
+                  // 3-dot Menu
+                  PopupMenuButton<_CardAction>(
+                    tooltip: Strings.menu,
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    onSelected: _onAction,
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: _CardAction.details, child: Text(Strings.donorDetails)),
+                      PopupMenuItem(value: _CardAction.copyPhone, child: Text(Strings.copyPhone)),
+                      PopupMenuItem(value: _CardAction.edit, child: Text(Strings.edit)),
+                      PopupMenuItem(value: _CardAction.delete, child: Text(Strings.delete)),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 10),
+
+              // 2. Status Pill + Lifetime Donations Pill
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Icon(statusIcon, size: 18, color: statusColor),
-                  const SizedBox(width: 6),
-                  Expanded(
+                  _buildStatusPill(result, isDark),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white10 : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: isDark ? Colors.white12 : Colors.grey.shade300,
+                      ),
+                    ),
                     child: Text(
-                      statusText,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: statusColor,
+                      '🩸 ${toBanglaDigits(donor.totalDonations)} বার (${milestone.title})',
+                      style: TextStyle(
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Text(
-                    Strings.donationCount(toBanglaDigits(donor.totalDonations)),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '• ${milestone.title}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: milestone.badgeColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+
               if (donor.notes != null && donor.notes!.trim().isNotEmpty) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   'নোট: ${donor.notes!.trim()}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontStyle: FontStyle.italic,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
+
+              const SizedBox(height: 10),
+              Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+              const SizedBox(height: 8),
+
+              // 3. Ergonomic Thumb-Zone Action Row
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  TextButton.icon(
-                    onPressed: _showDetails,
-                    icon: const Icon(Icons.history, size: 16),
-                    label: const Text(Strings.donorDetails),
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                  // Secondary text action: SMS
+                  IconButton(
+                    tooltip: Strings.sms,
+                    icon: const Icon(Icons.sms_outlined, size: 20),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _sms,
                   ),
-                  TextButton.icon(
+                  // Secondary text action: Donated Today
+                  IconButton(
+                    tooltip: Strings.donatedToday,
+                    icon: const Icon(Icons.bloodtype_outlined, size: 20),
+                    visualDensity: VisualDensity.compact,
                     onPressed: _busy ? null : _donatedToday,
-                    icon: const Icon(Icons.bloodtype, size: 16),
-                    label: const Text(Strings.donatedToday),
-                    style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                  ),
+                  const Spacer(),
+
+                  // WhatsApp Action Button
+                  FilledButton.tonalIcon(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Color(0xFF25D366)),
+                    label: const Text(
+                      'WhatsApp',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                    onPressed: _whatsapp,
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Large Primary Emergency Call Button
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      visualDensity: VisualDensity.compact,
+                      elevation: 1,
+                    ),
+                    icon: const Icon(Icons.call_rounded, size: 16),
+                    label: const Text(
+                      Strings.callNow,
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: _call,
                   ),
                 ],
               ),

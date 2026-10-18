@@ -108,6 +108,11 @@ class Strings {
 
   static const emptyList = 'কোনো ডোনার পাওয়া যায়নি';
   static const emptyHint = 'নিচের বোতাম চেপে প্রথম ডোনার যোগ করুন, অথবা ফিল্টার বদলান।';
+  static const findCompatibleAction = 'সামঞ্জস্যপূর্ণ ডোনার খুঁজুন';
+  static const createEmergencyPost = 'জরুরি রক্তের আবেদন তৈরি করুন';
+  static const resetFilters = 'ফিল্টার রিসেট করুন';
+  static const callNow = 'কল করুন';
+  static const readyToDonate = 'রক্তদানে প্রস্তুত';
   static const errorLoad = 'তালিকা লোড করা যায়নি';
   static const retry = 'আবার চেষ্টা করুন';
 

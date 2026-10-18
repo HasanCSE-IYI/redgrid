@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app.dart';
@@ -35,6 +36,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _searchController.addListener(() => setState(() {}));
     _checkSyncUrl();
   }
 
@@ -285,55 +287,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       controller: _searchController,
                       onChanged: _onQueryChanged,
                       textInputAction: TextInputAction.search,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
                         hintText: Strings.searchHint,
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                tooltip: 'মুছুন',
+                                icon: const Icon(Icons.clear, size: 20),
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  _searchController.clear();
+                                  ref.read(filterProvider.notifier).setQuery('');
+                                },
+                              )
+                            : null,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              label: const Text(Strings.allGroups),
-                              selected: filter.bloodGroup == null,
-                              onSelected: (_) => notifier.setBloodGroup(null),
-                            ),
-                          ),
-                          for (final group in AppConstants.bloodGroups)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: ChoiceChip(
-                                label: Text(group),
-                                selected: filter.bloodGroup == group,
-                                onSelected: (selected) => notifier.setBloodGroup(selected ? group : null),
-                              ),
-                            ),
-                        ],
-                      ),
+                    const SizedBox(height: 10),
+                    _BloodGroupMatrix(
+                      selectedGroup: filter.bloodGroup,
+                      onGroupSelected: (group) {
+                        HapticFeedback.selectionClick();
+                        notifier.setBloodGroup(group);
+                      },
                     ),
                     if (filter.bloodGroup != null) ...[
-                      const SizedBox(height: 6),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: FilterChip(
-                          avatar: Icon(
-                            filter.includeCompatible ? Icons.check_circle : Icons.swap_horiz,
-                            size: 16,
-                            color: filter.includeCompatible ? kCrimson : null,
-                          ),
-                          label: Text(
-                            '${filter.bloodGroup} এর সামঞ্জস্যপূর্ণ ডোনার সহ (${BloodCompatibility.compatibleDonorsFor(filter.bloodGroup!).join(', ')})',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: filter.includeCompatible ? FontWeight.w600 : FontWeight.normal,
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          notifier.setIncludeCompatible(!filter.includeCompatible);
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: filter.includeCompatible
+                                ? kCrimson.withValues(alpha: 0.1)
+                                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: filter.includeCompatible
+                                  ? kCrimson.withValues(alpha: 0.5)
+                                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
                             ),
                           ),
-                          selected: filter.includeCompatible,
-                          onSelected: notifier.setIncludeCompatible,
+                          child: Row(
+                            children: [
+                              Icon(
+                                filter.includeCompatible ? Icons.check_circle_rounded : Icons.swap_horiz_rounded,
+                                size: 18,
+                                color: filter.includeCompatible ? kCrimson : theme.colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${filter.bloodGroup} এর সামঞ্জস্যপূর্ণ ডোনার সহ (${BloodCompatibility.compatibleDonorsFor(filter.bloodGroup!).join(', ')})',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: filter.includeCompatible ? FontWeight.w600 : FontWeight.normal,
+                                    color: filter.includeCompatible ? kCrimson : theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -346,7 +364,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             allLabel: Strings.allDistricts,
                             value: filter.district,
                             options: kAreasByDistrict.keys.toList(),
-                            onChanged: notifier.setDistrict,
+                            onChanged: (val) {
+                              HapticFeedback.selectionClick();
+                              notifier.setDistrict(val);
+                            },
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -356,7 +377,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             allLabel: Strings.allAreas,
                             value: filter.area,
                             options: areaOptions,
-                            onChanged: filter.district == null ? null : notifier.setArea,
+                            onChanged: filter.district == null
+                                ? null
+                                : (val) {
+                                    HapticFeedback.selectionClick();
+                                    notifier.setArea(val);
+                                  },
                           ),
                         ),
                       ],
@@ -365,7 +391,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       contentPadding: EdgeInsets.zero,
                       title: const Text(Strings.eligibleOnly),
                       value: filter.eligibleOnly,
-                      onChanged: notifier.setEligibleOnly,
+                      onChanged: (val) {
+                        HapticFeedback.selectionClick();
+                        notifier.setEligibleOnly(val);
+                      },
                     ),
                   ],
                 ),
@@ -392,12 +421,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
               data: (list) => list.isEmpty
                   ? [
-                      const SliverFillRemaining(
+                      SliverFillRemaining(
                         hasScrollBody: false,
-                        child: _MessageState(
-                          icon: Icons.bloodtype_outlined,
-                          title: Strings.emptyList,
-                          hint: Strings.emptyHint,
+                        child: _SmartEmptyState(
+                          filter: filter,
+                          onFindCompatible: () {
+                            notifier.setIncludeCompatible(true);
+                          },
+                          onResetEligible: () {
+                            notifier.setEligibleOnly(false);
+                          },
+                          onResetFilters: () {
+                            _searchController.clear();
+                            notifier.reset();
+                          },
+                          onCreateEmergency: () {
+                            EmergencyRequestDialog.show(
+                              context,
+                              bloodGroup: filter.bloodGroup,
+                            );
+                          },
                         ),
                       ),
                     ]
@@ -550,6 +593,267 @@ class _MessageState extends StatelessWidget {
             FilledButton(onPressed: onAction, child: Text(actionLabel!)),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _BloodGroupMatrix extends StatelessWidget {
+  const _BloodGroupMatrix({
+    required this.selectedGroup,
+    required this.onGroupSelected,
+  });
+
+  final String? selectedGroup;
+  final ValueChanged<String?> onGroupSelected;
+
+  static const _row1 = <String?>[null, 'A+', 'B+', 'O+', 'AB+'];
+  static const _row2 = <String?>['Oh', 'A-', 'B-', 'O-', 'AB-'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildRow(context, _row1),
+        const SizedBox(height: 6),
+        _buildRow(context, _row2),
+      ],
+    );
+  }
+
+  Widget _buildRow(BuildContext context, List<String?> groups) {
+    return Row(
+      children: [
+        for (int i = 0; i < groups.length; i++) ...[
+          if (i > 0) const SizedBox(width: 6),
+          Expanded(
+            child: _BloodGroupButton(
+              group: groups[i],
+              isSelected: selectedGroup == groups[i],
+              onTap: () {
+                if (groups[i] == null) {
+                  onGroupSelected(null);
+                } else if (selectedGroup == groups[i]) {
+                  onGroupSelected(null);
+                } else {
+                  onGroupSelected(groups[i]);
+                }
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _BloodGroupButton extends StatelessWidget {
+  const _BloodGroupButton({
+    required this.group,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String? group;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final label = group ?? Strings.allGroups;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? kCrimson
+                : (isDark
+                    ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
+                    : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected
+                  ? kCrimson
+                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+              width: isSelected ? 1.5 : 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: kCrimson.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ]
+                : null,
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                  letterSpacing: group == null ? 0 : 0.4,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SmartEmptyState extends StatelessWidget {
+  const _SmartEmptyState({
+    required this.filter,
+    required this.onFindCompatible,
+    required this.onResetEligible,
+    required this.onResetFilters,
+    required this.onCreateEmergency,
+  });
+
+  final DonorFilter filter;
+  final VoidCallback onFindCompatible;
+  final VoidCallback onResetEligible;
+  final VoidCallback onResetFilters;
+  final VoidCallback onCreateEmergency;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasActiveFilter = filter.bloodGroup != null ||
+        filter.district != null ||
+        filter.area != null ||
+        filter.eligibleOnly ||
+        filter.query.isNotEmpty;
+
+    String subtitle;
+    if (filter.bloodGroup != null && filter.district != null) {
+      subtitle = '${filter.district}-এ ${filter.bloodGroup} গ্রুপের কোনো ডোনার পাওয়া যায়নি।';
+    } else if (filter.bloodGroup != null) {
+      subtitle = '${filter.bloodGroup} গ্রুপের কোনো ডোনার পাওয়া যায়নি।';
+    } else if (filter.query.isNotEmpty) {
+      subtitle = '"${filter.query}" দিয়ে কোনো তথ্য পাওয়া যায়নি।';
+    } else if (filter.district != null) {
+      subtitle = '${filter.district}-এ কোনো ডোনার পাওয়া যায়নি।';
+    } else {
+      subtitle = Strings.emptyHint;
+    }
+
+    final compatibleGroups = filter.bloodGroup != null
+        ? BloodCompatibility.compatibleDonorsFor(filter.bloodGroup!)
+        : const <String>[];
+    final canOfferCompatible = filter.bloodGroup != null &&
+        !filter.includeCompatible &&
+        compatibleGroups.length > 1;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: kCrimson.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.bloodtype_outlined,
+                  size: 38,
+                  color: kCrimson,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                Strings.emptyList,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              if (canOfferCompatible) ...[
+                FilledButton.icon(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    onFindCompatible();
+                  },
+                  icon: const Icon(Icons.swap_horiz_rounded),
+                  label: Text(
+                    '${Strings.findCompatibleAction} (${compatibleGroups.join(', ')})',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+              if (filter.eligibleOnly) ...[
+                OutlinedButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onResetEligible();
+                  },
+                  icon: const Icon(Icons.history_rounded),
+                  label: const Text('অপেক্ষমান ডোনার সহ সকল তালিকা দেখুন'),
+                ),
+                const SizedBox(height: 10),
+              ],
+              OutlinedButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  onCreateEmergency();
+                },
+                icon: const Icon(Icons.emergency_share, color: kCrimson),
+                label: const Text(
+                  Strings.createEmergencyPost,
+                  style: TextStyle(color: kCrimson, fontWeight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: kCrimson, width: 1.2),
+                ),
+              ),
+              if (hasActiveFilter) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onResetFilters();
+                  },
+                  icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+                  label: const Text(Strings.resetFilters),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
