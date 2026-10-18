@@ -11,7 +11,7 @@ import 'blood_widgets.dart';
 import 'donor_details_sheet.dart';
 import 'donor_form_screen.dart';
 
-enum _CardAction { details, copyPhone, edit, delete }
+enum _CardAction { details, copyPhone, sms, logDonation, edit, delete }
 
 class DonorCard extends ConsumerStatefulWidget {
   const DonorCard({
@@ -28,8 +28,6 @@ class DonorCard extends ConsumerStatefulWidget {
 }
 
 class _DonorCardState extends ConsumerState<DonorCard> {
-  bool _busy = false;
-
   Future<void> _call() => DonorContactActions.call(context, widget.donor.phone);
 
   Future<void> _whatsapp() => DonorContactActions.whatsapp(
@@ -51,9 +49,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
   }
 
   Future<void> _donatedToday() async {
-    setState(() => _busy = true);
     await handleMarkDonation(context, ref, widget.donor);
-    if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _delete() async {
@@ -89,6 +85,8 @@ class _DonorCardState extends ConsumerState<DonorCard> {
   List<PopupMenuEntry<_CardAction>> _buildMenuItems() => const [
     PopupMenuItem(value: _CardAction.details, child: Text(Strings.donorDetails)),
     PopupMenuItem(value: _CardAction.copyPhone, child: Text(Strings.copyPhone)),
+    PopupMenuItem(value: _CardAction.sms, child: Text(Strings.sms)),
+    PopupMenuItem(value: _CardAction.logDonation, child: Text(Strings.donatedToday)),
     PopupMenuItem(value: _CardAction.edit, child: Text(Strings.edit)),
     PopupMenuItem(value: _CardAction.delete, child: Text(Strings.delete)),
   ];
@@ -99,6 +97,10 @@ class _DonorCardState extends ConsumerState<DonorCard> {
         _showDetails();
       case _CardAction.copyPhone:
         DonorContactActions.copyPhone(context, widget.donor.phone);
+      case _CardAction.sms:
+        _sms();
+      case _CardAction.logDonation:
+        _donatedToday();
       case _CardAction.edit:
         Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => DonorFormScreen(donor: widget.donor)),
@@ -275,33 +277,18 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                   ),
                   const SizedBox(width: 12),
 
-                  // Name, Milestone & Location
+                  // Name & Location
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                donor.name,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Tooltip(
-                              message: milestone.title,
-                              child: Text(
-                                milestone.badgeIcon,
-                                style: const TextStyle(fontSize: 14),
-                                textScaler: TextScaler.noScaling,
-                              ),
-                            ),
-                          ],
+                        Text(
+                          donor.name,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 3),
                         Row(
@@ -377,7 +364,8 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   EligibilityPill(gender: donor.gender, lastDonationDate: donor.lastDonationDate),
-                  MilestoneBadge(totalDonations: donor.totalDonations),
+                  if (donor.totalDonations > 0)
+                    MilestoneBadge(totalDonations: donor.totalDonations),
                 ],
               ),
 
@@ -398,42 +386,25 @@ class _DonorCardState extends ConsumerState<DonorCard> {
               Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
               const SizedBox(height: 8),
 
-              // 3. Ergonomic Thumb-Zone Action Row
+              // 3. Clean Thumb-Zone Action Row (WhatsApp + Call)
               Row(
                 children: [
-                  // Secondary text action: SMS
-                  IconButton(
-                    tooltip: Strings.sms,
-                    icon: const Icon(Icons.sms_outlined, size: 20),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: _sms,
-                  ),
-                  // Secondary text action: Donated Today
-                  IconButton(
-                    tooltip: Strings.donatedToday,
-                    icon: const Icon(Icons.bloodtype_outlined, size: 20),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: _busy ? null : _donatedToday,
-                  ),
                   const Spacer(),
 
-                  // WhatsApp Action Button
-                  FilledButton.tonalIcon(
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  // WhatsApp
+                  IconButton.filledTonal(
+                    tooltip: Strings.whatsapp,
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366).withValues(alpha: 0.12),
+                      foregroundColor: const Color(0xFF25D366),
                       visualDensity: VisualDensity.compact,
                     ),
-                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Color(0xFF25D366)),
-                    label: const Text(
-                      'WhatsApp',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
+                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
                     onPressed: _whatsapp,
                   ),
                   const SizedBox(width: 8),
 
-                  // Smart Emergency Call Button (Green if ready, Outlined if waiting)
+                  // Call Button
                   isEligible
                       ? FilledButton.icon(
                           style: FilledButton.styleFrom(
@@ -442,7 +413,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             visualDensity: VisualDensity.compact,
-                            elevation: 1,
+                            elevation: 0,
                           ),
                           icon: const Icon(Icons.call_rounded, size: 16),
                           label: const Text(
@@ -451,25 +422,22 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                           ),
                           onPressed: _call,
                         )
-                      : Tooltip(
-                          message: 'ডোনার বর্তমানে অপেক্ষমান সময়ের মধ্যে আছেন',
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: isDark ? Colors.white70 : kWaitSlate,
-                              side: BorderSide(
-                                color: isDark ? Colors.white24 : Colors.grey.shade400,
-                              ),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              visualDensity: VisualDensity.compact,
+                      : OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isDark ? Colors.white70 : kWaitSlate,
+                            side: BorderSide(
+                              color: isDark ? Colors.white24 : Colors.grey.shade400,
                             ),
-                            icon: const Icon(Icons.call_outlined, size: 15),
-                            label: const Text(
-                              Strings.callWaiting,
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                            ),
-                            onPressed: _call,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            visualDensity: VisualDensity.compact,
                           ),
+                          icon: const Icon(Icons.call_outlined, size: 15),
+                          label: const Text(
+                            Strings.call,
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                          onPressed: _call,
                         ),
                 ],
               ),

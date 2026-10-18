@@ -6,7 +6,6 @@ import '../core/date_format.dart';
 import '../core/digits.dart';
 import '../core/strings_bn.dart';
 import '../data/donor.dart';
-import '../domain/milestones.dart';
 import '../providers.dart';
 import 'blood_widgets.dart';
 
@@ -87,7 +86,6 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
         ) ??
         widget.donor;
 
-    final milestone = DonorMilestone.forCount(donor.totalDonations);
     final historyAsync = ref.watch(donationDatesProvider(donor.id!));
 
     return DraggableScrollableSheet(
@@ -154,51 +152,6 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
             gender: donor.gender,
             lastDonationDate: donor.lastDonationDate,
           ),
-          if (donor.totalDonations > 0) ...[
-            const SizedBox(height: 10),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: theme.brightness == Brightness.dark
-                      ? [Colors.amber.shade900.withValues(alpha: 0.25), const Color(0xFF1E2228)]
-                      : [const Color(0xFFFFF8E1), Colors.white],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: theme.brightness == Brightness.dark
-                      ? Colors.amber.shade700.withValues(alpha: 0.4)
-                      : Colors.amber.shade300,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Text(milestone.badgeIcon, style: const TextStyle(fontSize: 22)),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${milestone.title} • মোট ${toBanglaDigits(donor.totalDonations)} বার রক্তদান',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        Text(
-                          'আনুমানিক ${toBanglaDigits(donor.totalDonations * 3)} ${Strings.livesImpactText}',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: theme.brightness == Brightness.dark ? Colors.amber.shade200 : const Color(0xFFB45309),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           const SizedBox(height: 12),
           // যোগাযোগ বোতামসমূহ
           Padding(

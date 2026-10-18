@@ -7,10 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app.dart';
 import '../core/areas.dart';
-import '../core/constants.dart';
 import '../core/digits.dart';
 import '../core/strings_bn.dart';
-import '../data/donor_repository.dart';
 import '../domain/compatibility.dart';
 import '../providers.dart';
 import '../services/sync_service.dart';
@@ -34,7 +32,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _debounce;
   late final TextEditingController _searchController;
-  bool _hasSyncUrl = false;
   bool _isFabExtended = true;
   bool _isCompactView = false;
 
@@ -50,21 +47,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     _searchController = TextEditingController();
     _searchController.addListener(() => setState(() {}));
-    _checkSyncUrl();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _doSilentStartupSync();
     });
-  }
-
-  Future<void> _checkSyncUrl() async {
-    final repo = ref.read(donorRepositoryProvider);
-    final url = await repo.getSetting(AppConstants.settingCloudUrl);
-    final effective = (url != null && url.trim().isNotEmpty)
-        ? url
-        : AppConstants.defaultCloudUrl;
-    if (mounted) {
-      setState(() => _hasSyncUrl = effective.trim().isNotEmpty);
-    }
   }
 
   Future<void> _doSilentStartupSync() async {
@@ -125,10 +110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final filter = ref.watch(filterProvider);
     final notifier = ref.read(filterProvider.notifier);
     final donors = ref.watch(donorListProvider);
-    final statsAsync = ref.watch(donorStatsProvider);
-    final syncStatus = ref.watch(syncStatusProvider);
     final theme = Theme.of(context);
-    final isSyncing = syncStatus.status == SyncStatus.syncing;
 
     final areaOptions = filter.district == null
         ? const <String>[]
@@ -160,44 +142,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: kEligibleGreen.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: kEligibleGreen.withValues(alpha: 0.3)),
-              ),
-              child: const Text(
-                Strings.offlineBadge,
-                style: TextStyle(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.bold,
-                  color: kEligibleGreen,
-                ),
-              ),
-            ),
           ],
         ),
         actions: [
-          // Cloud Sync Icon
-          isSyncing
-              ? const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              : IconButton(
-                  tooltip: Strings.cloudSync,
-                  icon: Icon(
-                    _hasSyncUrl ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
-                    color: _hasSyncUrl ? Colors.green.shade600 : theme.colorScheme.onSurfaceVariant,
-                  ),
-                  onPressed: () => _showSyncDialog(context),
-                ),
+          // জরুরি রক্তের আবেদন বোতাম
+          IconButton(
+            tooltip: Strings.emergencyBannerTitle,
+            icon: const Icon(Icons.emergency_share_rounded, color: kCrimson),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              EmergencyRequestDialog.show(
+                context,
+                bloodGroup: filter.bloodGroup,
+              );
+            },
+          ),
           Consumer(
             builder: (context, ref, _) {
               final unreadCount = ref.watch(notificationProvider).maybeWhen(
@@ -222,9 +181,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             tooltip: Strings.menu,
             onSelected: _onMenu,
             itemBuilder: (_) => const [
+              PopupMenuItem(value: _MenuAction.syncSettings, child: Text(Strings.cloudSyncTitle)),
               PopupMenuItem(value: _MenuAction.backup, child: Text(Strings.backup)),
               PopupMenuItem(value: _MenuAction.restore, child: Text(Strings.restore)),
-              PopupMenuItem(value: _MenuAction.syncSettings, child: Text(Strings.cloudSyncTitle)),
               PopupMenuItem(value: _MenuAction.about, child: Text(Strings.about)),
             ],
           ),
@@ -268,144 +227,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       children: [
                         // স্মার্ট নোটিফিকেশন ব্যানার
                         const HomeNotificationBanner(),
-                        // জরুরি রক্তের আবেদন হিরো ব্যানার
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: theme.brightness == Brightness.dark
-                                    ? [kCrimson.withValues(alpha: 0.25), const Color(0xFF1E2228)]
-                                    : [const Color(0xFFFFEBEE), Colors.white],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: kCrimson.withValues(alpha: theme.brightness == Brightness.dark ? 0.4 : 0.25),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: kCrimson.withValues(alpha: 0.15),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.emergency_share_rounded, color: kCrimson, size: 20),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        Strings.emergencyBannerTitle,
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
-                                      ),
-                                      Text(
-                                        Strings.emergencyBannerSub,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: theme.colorScheme.onSurfaceVariant,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                FilledButton(
-                                  onPressed: () {
-                                    HapticFeedback.lightImpact();
-                                    EmergencyRequestDialog.show(
-                                      context,
-                                      bloodGroup: filter.bloodGroup,
-                                    );
-                                  },
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: kCrimson,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                  child: const Text(
-                                    Strings.createPostAction,
-                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // সারাংশ পরিসংখ্যান ব্যানার
-                        statsAsync.when(
-                          skipLoadingOnReload: true,
-                          data: (stats) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: [
-                                  _StatItem(
-                                    label: Strings.totalDonors,
-                                    value: '${toBanglaDigits(stats.totalDonors)} ${Strings.countUnit}',
-                                    icon: Icons.people_outline_rounded,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                  Container(
-                                    width: 1,
-                                    height: 28,
-                                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      HapticFeedback.selectionClick();
-                                      notifier.setEligibleOnly(!filter.eligibleOnly);
-                                    },
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      child: _StatItem(
-                                        label: Strings.readyDonors,
-                                        value: '${toBanglaDigits(stats.eligibleToday)} ${Strings.countUnit}',
-                                        icon: Icons.check_circle_rounded,
-                                        color: kEligibleGreen,
-                                        isHighlighted: filter.eligibleOnly,
-                                      ),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 1,
-                                    height: 28,
-                                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
-                                  ),
-                                  _StatItem(
-                                    label: Strings.totalDonations,
-                                    value: '${toBanglaDigits(stats.totalDonations)} ${Strings.timesUnit}',
-                                    icon: Icons.volunteer_activism_outlined,
-                                    color: kCrimson,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
-                        ),
+                        // সার্চ বক্স
                         TextField(
                           controller: _searchController,
                           onChanged: _onQueryChanged,
@@ -426,8 +248,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 : null,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        _BloodGroupMatrix(
+                        const SizedBox(height: 8),
+                        // রক্তের গ্রুপ নির্বাচক
+                        _BloodGroupSelector(
                           selectedGroup: filter.bloodGroup,
                           onGroupSelected: (group) {
                             HapticFeedback.selectionClick();
@@ -435,39 +258,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           },
                         ),
                         if (filter.bloodGroup != null) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           InkWell(
                             onTap: () {
                               HapticFeedback.selectionClick();
                               notifier.setIncludeCompatible(!filter.includeCompatible);
                             },
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
                                 color: filter.includeCompatible
                                     ? kCrimson.withValues(alpha: 0.1)
                                     : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: filter.includeCompatible
-                                      ? kCrimson.withValues(alpha: 0.5)
-                                      : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                                      ? kCrimson.withValues(alpha: 0.4)
+                                      : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Icon(
                                     filter.includeCompatible ? Icons.check_circle_rounded : Icons.swap_horiz_rounded,
-                                    size: 18,
+                                    size: 16,
                                     color: filter.includeCompatible ? kCrimson : theme.colorScheme.onSurfaceVariant,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      '${filter.bloodGroup} এর সামঞ্জস্যপূর্ণ ডোনার সহ (${BloodCompatibility.compatibleDonorsFor(filter.bloodGroup!).join(', ')})',
+                                      'সামঞ্জস্যপূর্ণ রক্তদাতা সহ (${BloodCompatibility.compatibleDonorsFor(filter.bloodGroup!).join(', ')})',
                                       style: TextStyle(
-                                        fontSize: 12,
+                                        fontSize: 11.5,
                                         fontWeight: filter.includeCompatible ? FontWeight.w600 : FontWeight.normal,
                                         color: filter.includeCompatible ? kCrimson : theme.colorScheme.onSurface,
                                       ),
@@ -478,92 +301,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                         ],
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _FilterDropdown(
-                            label: Strings.district,
-                            allLabel: Strings.allDistricts,
-                            value: filter.district,
-                            options: kAreasByDistrict.keys.toList(),
-                            onChanged: (val) {
-                              HapticFeedback.selectionClick();
-                              notifier.setDistrict(val);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _FilterDropdown(
-                            label: Strings.area,
-                            allLabel: Strings.allAreas,
-                            value: filter.area,
-                            options: areaOptions,
-                            onChanged: filter.district == null
-                                ? null
-                                : (val) {
-                                    HapticFeedback.selectionClick();
-                                    notifier.setArea(val);
-                                  },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        notifier.setEligibleOnly(!filter.eligibleOnly);
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: filter.eligibleOnly
-                              ? kEligibleGreen.withValues(alpha: 0.12)
-                              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: filter.eligibleOnly
-                                ? kEligibleGreen.withValues(alpha: 0.5)
-                                : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Row(
+                        const SizedBox(height: 6),
+                        Row(
                           children: [
-                            Icon(
-                              filter.eligibleOnly ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                              size: 17,
-                              color: filter.eligibleOnly ? kEligibleGreen : theme.colorScheme.onSurfaceVariant,
+                            Expanded(
+                              child: _FilterDropdown(
+                                label: Strings.district,
+                                allLabel: Strings.allDistricts,
+                                value: filter.district,
+                                options: kAreasByDistrict.keys.toList(),
+                                onChanged: (val) {
+                                  HapticFeedback.selectionClick();
+                                  notifier.setDistrict(val);
+                                },
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
-                                Strings.eligibleOnly,
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: filter.eligibleOnly ? FontWeight.w600 : FontWeight.normal,
-                                  color: filter.eligibleOnly ? kEligibleGreen : theme.colorScheme.onSurface,
-                                ),
+                              child: _FilterDropdown(
+                                label: Strings.area,
+                                allLabel: Strings.allAreas,
+                                value: filter.area,
+                                options: areaOptions,
+                                onChanged: filter.district == null
+                                    ? null
+                                    : (val) {
+                                        HapticFeedback.selectionClick();
+                                        notifier.setArea(val);
+                                      },
                               ),
                             ),
-                            if (filter.eligibleOnly)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: kEligibleGreen,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'সক্রিয়',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                                ),
-                              ),
                           ],
                         ),
-                      ),
-                    ),
+                        const SizedBox(height: 6),
+                        InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            notifier.setEligibleOnly(!filter.eligibleOnly);
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: filter.eligibleOnly
+                                  ? kEligibleGreen.withValues(alpha: 0.12)
+                                  : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: filter.eligibleOnly
+                                    ? kEligibleGreen.withValues(alpha: 0.4)
+                                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  filter.eligibleOnly ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                                  size: 16,
+                                  color: filter.eligibleOnly ? kEligibleGreen : theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    Strings.eligibleOnly,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: filter.eligibleOnly ? FontWeight.w600 : FontWeight.normal,
+                                      color: filter.eligibleOnly ? kEligibleGreen : theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                   ],
                 ),
               ),
@@ -701,32 +512,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           isCompact: _isCompactView,
                         ),
                       ),
-                      // নিচের কার্ড ঢাকা পড়া ঠেকাতে অতিরিক্ত ফাঁকা জায়গা ও ডিসক্লেইমার।
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.health_and_safety_outlined,
-                                size: 15,
-                                color: theme.colorScheme.outline,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  Strings.disclaimer,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.outline,
-                                    fontSize: 11,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      // নিচের কার্ড ঢাকা পড়া ঠেকাতে অতিরিক্ত ফাঁকা জায়গা
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: 80),
                       ),
                     ],
             ),
@@ -742,60 +530,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     SyncSettingsDialog.show(
       context,
       onSaved: () {
-        _checkSyncUrl();
         _doSync();
       },
     );
   }
 }
 
-class _StatItem extends StatelessWidget {
-  const _StatItem({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-    this.isHighlighted = false,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final bool isHighlighted;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(
-              value,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isHighlighted ? color : null,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: isHighlighted ? color : theme.colorScheme.onSurfaceVariant,
-            fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _FilterDropdown extends StatelessWidget {
   const _FilterDropdown({
@@ -865,8 +605,8 @@ class _MessageState extends StatelessWidget {
   }
 }
 
-class _BloodGroupMatrix extends StatelessWidget {
-  const _BloodGroupMatrix({
+class _BloodGroupSelector extends StatelessWidget {
+  const _BloodGroupSelector({
     required this.selectedGroup,
     required this.onGroupSelected,
   });
@@ -874,49 +614,49 @@ class _BloodGroupMatrix extends StatelessWidget {
   final String? selectedGroup;
   final ValueChanged<String?> onGroupSelected;
 
-  static const _row1 = <String?>[null, 'A+', 'B+', 'O+', 'AB+'];
-  static const _row2 = <String?>['Oh', 'A-', 'B-', 'O-', 'AB-'];
+  static const _groups = <String?>[
+    null,
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'O+',
+    'O-',
+    'AB+',
+    'AB-',
+    'Oh',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildRow(context, _row1),
-        const SizedBox(height: 6),
-        _buildRow(context, _row2),
-      ],
-    );
-  }
-
-  Widget _buildRow(BuildContext context, List<String?> groups) {
-    return Row(
-      children: [
-        for (int i = 0; i < groups.length; i++) ...[
-          if (i > 0) const SizedBox(width: 6),
-          Expanded(
-            child: _BloodGroupButton(
-              group: groups[i],
-              isSelected: selectedGroup == groups[i],
-              onTap: () {
-                if (groups[i] == null) {
-                  onGroupSelected(null);
-                } else if (selectedGroup == groups[i]) {
-                  onGroupSelected(null);
-                } else {
-                  onGroupSelected(groups[i]);
-                }
-              },
-            ),
-          ),
-        ],
-      ],
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: _groups.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          final group = _groups[index];
+          return _BloodGroupPill(
+            group: group,
+            isSelected: selectedGroup == group,
+            onTap: () {
+              if (group == null || selectedGroup == group) {
+                onGroupSelected(null);
+              } else {
+                onGroupSelected(group);
+              }
+            },
+          );
+        },
+      ),
     );
   }
 }
 
-class _BloodGroupButton extends StatelessWidget {
-  const _BloodGroupButton({
+class _BloodGroupPill extends StatelessWidget {
+  const _BloodGroupPill({
     required this.group,
     required this.isSelected,
     required this.onTap,
@@ -937,11 +677,11 @@ class _BloodGroupButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(19),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOut,
-          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected
@@ -949,53 +689,47 @@ class _BloodGroupButton extends StatelessWidget {
                 : (isDark
                     ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
                     : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(19),
             border: Border.all(
               color: isSelected
                   ? kCrimson
-                  : theme.colorScheme.outlineVariant.withValues(alpha: isDark ? 0.4 : 0.6),
-              width: isSelected ? 1.6 : 1,
+                  : theme.colorScheme.outlineVariant.withValues(alpha: isDark ? 0.35 : 0.55),
+              width: isSelected ? 1.5 : 1,
             ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: kCrimson.withValues(alpha: 0.32),
+                      color: kCrimson.withValues(alpha: 0.3),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                   ]
                 : null,
           ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                      color: isSelected ? Colors.white : theme.colorScheme.onSurface,
-                      letterSpacing: group == null ? 0 : 0.4,
-                    ),
-                  ),
-                  if (isRare && !isSelected) ...[
-                    const SizedBox(width: 3),
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: const BoxDecoration(
-                        color: Colors.amber,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                  letterSpacing: group == null ? 0 : 0.4,
+                ),
               ),
-            ),
+              if (isRare && !isSelected) ...[
+                const SizedBox(width: 4),
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: const BoxDecoration(
+                    color: Colors.amber,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
@@ -1109,56 +843,40 @@ class _SmartEmptyState extends StatelessWidget {
                     foregroundColor: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 10),
-              ],
-              if (canOfferCompatible) ...[
-                FilledButton.icon(
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    onFindCompatible();
-                  },
-                  icon: const Icon(Icons.swap_horiz_rounded),
-                  label: Text(
-                    '${Strings.findCompatibleAction} (${compatibleGroups.join(', ')})',
-                    textAlign: TextAlign.center,
+              ] else ...[
+                if (canOfferCompatible) ...[
+                  FilledButton.icon(
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      onFindCompatible();
+                    },
+                    icon: const Icon(Icons.swap_horiz_rounded),
+                    label: Text(
+                      '${Strings.findCompatibleAction} (${compatibleGroups.join(', ')})',
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              if (filter.eligibleOnly) ...[
+                  const SizedBox(height: 10),
+                ],
                 OutlinedButton.icon(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    onResetEligible();
-                  },
-                  icon: const Icon(Icons.history_rounded),
-                  label: const Text('অপেক্ষমান ডোনার সহ সকল তালিকা দেখুন'),
-                ),
-                const SizedBox(height: 10),
-              ],
-              OutlinedButton.icon(
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  onCreateEmergency();
-                },
-                icon: const Icon(Icons.emergency_share, color: kCrimson),
-                label: const Text(
-                  Strings.createEmergencyPost,
-                  style: TextStyle(color: kCrimson, fontWeight: FontWeight.w600),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: kCrimson, width: 1.2),
-                ),
-              ),
-              if (hasActiveFilter) ...[
-                const SizedBox(height: 8),
-                TextButton.icon(
                   onPressed: () {
                     HapticFeedback.lightImpact();
                     onResetFilters();
                   },
                   icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
                   label: const Text(Strings.resetFilters),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onCreateEmergency();
+                  },
+                  icon: const Icon(Icons.emergency_share, color: kCrimson, size: 18),
+                  label: const Text(
+                    Strings.createEmergencyPost,
+                    style: TextStyle(color: kCrimson, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ],
