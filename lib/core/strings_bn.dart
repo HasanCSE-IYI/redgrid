@@ -114,7 +114,7 @@ class Strings {
   static const backup = 'ব্যাকআপ';
   static const restore = 'রিস্টোর';
   static const about = 'সম্পর্কে';
-  static const developedBy = 'Developed by Hasan Abdullah';
+  static const developedBy = 'Developed by Bhuiyan Ghazi';
   static const devPhone = '+8801727328200';
   static const devWhatsappMessage =
       'আসসালামু আলাইকুম, RedGrid প্রজেক্টে সাদাকায়ে জারিয়া সহায়তা প্রসঙ্গে যোগাযোগ করছি।';

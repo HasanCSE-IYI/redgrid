@@ -5,7 +5,7 @@ import 'package:redgrid/services/contact_service.dart';
 void main() {
   group('About & Developer Constants', () {
     test('contains correct developer attribution', () {
-      expect(Strings.developedBy, 'Developed by Hasan Abdullah');
+      expect(Strings.developedBy, 'Developed by Bhuiyan Ghazi');
     });
 
     test('contains correct phone number and Sadaqah Jariyah support', () {
