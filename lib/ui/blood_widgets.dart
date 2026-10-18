@@ -242,7 +242,11 @@ class EligibilityBanner extends StatelessWidget {
       today: now,
     );
 
-    final color = check.eligible ? kEligibleGreen : kWaitSlate;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final color = check.eligible
+        ? kEligibleGreen
+        : (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706));
     final icon = check.eligible ? Icons.check_circle_rounded : Icons.hourglass_bottom_rounded;
 
     final String text;
@@ -254,16 +258,16 @@ class EligibilityBanner extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: color.withValues(alpha: isDark ? 0.14 : 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
           Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
