@@ -256,9 +256,9 @@ class AboutAppDialog extends StatelessWidget {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 6),
-                        SelectableText(
+                        const SelectableText(
                           Strings.devPhone,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.8,
