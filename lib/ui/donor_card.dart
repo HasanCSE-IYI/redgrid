@@ -303,47 +303,19 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                   onPressed: _call,
                 ),
                 PopupMenuButton<_CardAction>(
-                  icon: Icon(Icons.more_vert, size: 19, color: theme.colorScheme.onSurfaceVariant),
+                  tooltip: Strings.menu,
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    size: 19,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                  onSelected: _onMenuAction,
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: _CardAction.details,
-                      child: ListTile(
-                        leading: Icon(Icons.history_edu_rounded, size: 20),
-                        title: Text(Strings.viewDetails),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: _CardAction.copyPhone,
-                      child: ListTile(
-                        leading: Icon(Icons.copy_rounded, size: 20),
-                        title: Text(Strings.copyNumber),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: _CardAction.edit,
-                      child: ListTile(
-                        leading: Icon(Icons.edit_outlined, size: 20),
-                        title: Text(Strings.edit),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: _CardAction.delete,
-                      child: ListTile(
-                        leading: Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                        title: Text(Strings.delete, style: TextStyle(color: Colors.red)),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
+                  onSelected: _onAction,
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: _CardAction.details, child: Text(Strings.donorDetails)),
+                    PopupMenuItem(value: _CardAction.copyPhone, child: Text(Strings.copyPhone)),
+                    PopupMenuItem(value: _CardAction.edit, child: Text(Strings.edit)),
+                    PopupMenuItem(value: _CardAction.delete, child: Text(Strings.delete)),
                   ],
                 ),
               ],
