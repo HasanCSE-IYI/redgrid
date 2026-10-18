@@ -19,6 +19,7 @@ import 'data_tools.dart';
 import 'donor_card.dart';
 import 'donor_form_screen.dart';
 import 'emergency_request_dialog.dart';
+import 'notification_center_sheet.dart';
 
 enum _MenuAction { backup, restore, about }
 
@@ -48,6 +49,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _searchController = TextEditingController();
     _searchController.addListener(() => setState(() {}));
     _checkSyncUrl();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _doSilentStartupSync();
+    });
   }
 
   Future<void> _checkSyncUrl() async {
@@ -59,6 +63,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (mounted) {
       setState(() => _hasSyncUrl = effective.trim().isNotEmpty);
     }
+  }
+
+  Future<void> _doSilentStartupSync() async {
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+    ref.read(syncStatusProvider.notifier).sync(silent: true);
   }
 
   @override
@@ -86,8 +96,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _ => null,
     };
     if (msg != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg), duration: const Duration(seconds: 3)),
+      AppNotificationToast.show(
+        context,
+        message: msg,
+        icon: result.isSuccess ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+        color: result.isSuccess ? kEligibleGreen : kCrimson,
       );
     }
   }
@@ -177,6 +190,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               bloodGroup: filter.bloodGroup,
             ),
           ),
+          Consumer(
+            builder: (context, ref, _) {
+              final unreadCount = ref.watch(notificationProvider).maybeWhen(
+                    data: (state) => state.unreadCount,
+                    orElse: () => 0,
+                  );
+              return IconButton(
+                tooltip: Strings.notifications,
+                icon: unreadCount > 0
+                    ? Badge.count(
+                        count: unreadCount,
+                        backgroundColor: kCrimson,
+                        textColor: Colors.white,
+                        child: const Icon(Icons.notifications_active_rounded),
+                      )
+                    : const Icon(Icons.notifications_outlined),
+                onPressed: () => NotificationCenterSheet.show(context),
+              );
+            },
+          ),
           PopupMenuButton<_MenuAction>(
             tooltip: Strings.menu,
             onSelected: _onMenu,
@@ -223,6 +256,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // স্মার্ট নোটিফিকেশন ব্যানার
+                        const HomeNotificationBanner(),
                         // সারাংশ পরিসংখ্যান ব্যানার
                     statsAsync.when(
                       skipLoadingOnReload: true,

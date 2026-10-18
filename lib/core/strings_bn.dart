@@ -181,4 +181,21 @@ class Strings {
   static const cloudSyncResetDone = 'ডিফল্ট সার্ভার পুনঃস্থাপিত হয়েছে';
   static const cloudSyncAdvancedSettings = 'উন্নত সার্ভার সেটিংস (ঐচ্ছিক)';
   static const cloudSyncBuiltInDesc = 'RedGrid এর সুরক্ষিত বিল্ট-ইন সার্ভারের মাধ্যমে ডেটা অটোমেটিক সিঙ্ক হচ্ছে।';
+
+  // নোটিফিকেশন ও অ্যালার্ট (Notifications & Alerts)
+  static const notifications = 'বিজ্ঞপ্তি ও অ্যালার্ট';
+  static const noNotifications = 'কোনো নতুন বিজ্ঞপ্তি নেই';
+  static const noNotificationsDesc =
+      'রক্তদানে প্রস্তুত হওয়া ডোনার এবং ক্লাউড সিঙ্কের স্বয়ংক্রিয় অ্যালার্ট এখানে প্রদর্শিত হবে।';
+  static const markAllAsRead = 'সব পঠিত';
+  static const clearAll = 'সব মুছুন';
+  static const filterAll = 'সব';
+  static const filterReady = 'রক্তদানে প্রস্তুত';
+  static const filterSync = 'সিঙ্ক ও সিস্টেম';
+  static const readyToDonateTitle = 'রক্তদানে প্রস্তুত ডোনার';
+  static const callAction = 'কল';
+  static const whatsappAction = 'WhatsApp';
+  static const profileAction = 'প্রোফাইল';
+  static const viewDetails = 'বিস্তারিত দেখুন';
+  static const newNotificationToast = 'নতুন বিজ্ঞপ্তি';
 }

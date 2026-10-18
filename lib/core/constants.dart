@@ -25,6 +25,9 @@ class AppConstants {
   static const settingCloudUrl = 'cloud_sync_url';
   static const settingSyncKey = 'cloud_sync_key';
   static const settingLastSynced = 'cloud_last_synced';
+  static const settingReadNotifications = 'notifications_read_ids';
+  static const settingDismissedNotifications = 'notifications_dismissed_ids';
+  static const settingBannerDismissed = 'notifications_banner_dismissed_id';
 
   /// বিল্ট-ইন ক্লাউড সিঙ্ক ডিফল্ট
   static const defaultCloudUrl = 'https://redgrid-sync.rauaha.workers.dev';

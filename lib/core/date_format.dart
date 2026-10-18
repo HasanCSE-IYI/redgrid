@@ -33,3 +33,20 @@ String formatIsoDateBn(String iso) {
   return parsed != null ? formatDateBn(parsed) : toBanglaDigits(iso);
 }
 
+/// বাংলা ভাষায় আপেক্ষিক সময় প্রদর্শন (যেমন: এইমাত্র, ৫ মিনিট আগে, ২ ঘণ্টা আগে, ৩ দিন আগে)
+String formatRelativeTimeBn(DateTime dateTime, {DateTime? now}) {
+  final current = now ?? DateTime.now();
+  final diff = current.difference(dateTime);
+  if (diff.isNegative || diff.inSeconds < 60) {
+    return 'এইমাত্র';
+  } else if (diff.inMinutes < 60) {
+    return '${toBanglaDigits(diff.inMinutes)} মিনিট আগে';
+  } else if (diff.inHours < 24) {
+    return '${toBanglaDigits(diff.inHours)} ঘণ্টা আগে';
+  } else if (diff.inDays < 7) {
+    return '${toBanglaDigits(diff.inDays)} দিন আগে';
+  } else {
+    return formatDateBn(dateTime);
+  }
+}
+

@@ -132,6 +132,17 @@ class DonorRepository {
     return donors;
   }
 
+  Future<Donor?> getById(int id) async {
+    final rows = await _db.query(
+      AppConstants.tableDonors,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return Donor.fromMap(rows.first);
+  }
+
   Future<int> insert(Donor donor) async {
     try {
       return await _db.transaction((txn) async {

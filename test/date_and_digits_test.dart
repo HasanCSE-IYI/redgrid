@@ -49,5 +49,14 @@ void main() {
     test('Strings.eligibleIn uses Bengali digits', () {
       expect(Strings.eligibleIn(45, '১৬/১০/২০২৬'), 'আর ৪৫ দিন পরে যোগ্য (১৬/১০/২০২৬ থেকে)');
     });
+
+    test('formatRelativeTimeBn formats relative time in Bengali', () {
+      final now = DateTime.utc(2026, 10, 18, 12, 0, 0);
+      expect(formatRelativeTimeBn(now.subtract(const Duration(seconds: 30)), now: now), 'এইমাত্র');
+      expect(formatRelativeTimeBn(now.subtract(const Duration(minutes: 5)), now: now), '৫ মিনিট আগে');
+      expect(formatRelativeTimeBn(now.subtract(const Duration(hours: 3)), now: now), '৩ ঘণ্টা আগে');
+      expect(formatRelativeTimeBn(now.subtract(const Duration(days: 2)), now: now), '২ দিন আগে');
+    });
   });
 }
+
