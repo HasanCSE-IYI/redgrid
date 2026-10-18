@@ -21,6 +21,10 @@ class EmergencyRequestDialog extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      clipBehavior: Clip.antiAlias,
       builder: (_) => EmergencyRequestDialog(initialBloodGroup: bloodGroup),
     );
   }
@@ -32,19 +36,36 @@ class EmergencyRequestDialog extends ConsumerStatefulWidget {
 class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog> {
   final _formKey = GlobalKey<FormState>();
   late String _selectedGroup;
+  String _units = '১ ব্যাগ';
+  String _when = 'জরুরি / আজ';
+
   final _hospitalController = TextEditingController();
-  final _unitsController = TextEditingController(text: '১ ব্যাগ');
-  final _whenController = TextEditingController(text: 'জরুরি / আজ');
   final _reasonController = TextEditingController();
   final _phoneController = TextEditingController();
+
+  static const _unitOptions = [
+    '১ ব্যাগ',
+    '২ ব্যাগ',
+    '৩ ব্যাগ',
+    '৪ ব্যাগ',
+    '৫ ব্যাগ',
+    '৬ ব্যাগ',
+  ];
+
+  static const _whenOptions = [
+    'জরুরি / আজ',
+    'আজ সন্ধ্যা',
+    'আজ রাত',
+    'আগামীকাল',
+    'যত দ্রুত সম্ভব',
+    '২ দিন পর',
+  ];
 
   @override
   void initState() {
     super.initState();
     _selectedGroup = widget.initialBloodGroup ?? 'A+';
     _hospitalController.addListener(_onTextChanged);
-    _unitsController.addListener(_onTextChanged);
-    _whenController.addListener(_onTextChanged);
     _reasonController.addListener(_onTextChanged);
     _phoneController.addListener(_onTextChanged);
   }
@@ -56,13 +77,9 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
   @override
   void dispose() {
     _hospitalController.removeListener(_onTextChanged);
-    _unitsController.removeListener(_onTextChanged);
-    _whenController.removeListener(_onTextChanged);
     _reasonController.removeListener(_onTextChanged);
     _phoneController.removeListener(_onTextChanged);
     _hospitalController.dispose();
-    _unitsController.dispose();
-    _whenController.dispose();
     _reasonController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -71,11 +88,13 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
   String _buildBroadcastText() {
     return ContactService.composeBroadcastPost(
       bloodGroup: _selectedGroup,
-      units: _unitsController.text,
+      units: _units,
       hospital: _hospitalController.text,
-      when: _whenController.text,
+      when: _when,
       reason: _reasonController.text,
-      contactPhone: _phoneController.text,
+      contactPhone: _phoneController.text.trim().isEmpty
+          ? '(নম্বর দিন)'
+          : _phoneController.text.trim(),
     );
   }
 
@@ -112,13 +131,14 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           child: Form(
             key: _formKey,
             child: Column(
@@ -127,162 +147,248 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
               children: [
                 Center(
                   child: Container(
-                    width: 40,
+                    width: 38,
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 Row(
                   children: [
-                    const Icon(Icons.emergency, color: kCrimson, size: 28),
+                    const Icon(Icons.emergency_share_rounded, color: kCrimson, size: 24),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         Strings.emergencyTitle,
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16.5,
+                        ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(Strings.bloodGroup, style: theme.textTheme.labelLarge),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final group in AppConstants.bloodGroups)
-                      ChoiceChip(
-                        label: Text(group),
-                        selected: _selectedGroup == group,
-                        selectedColor: kCrimson.withValues(alpha: 0.15),
-                        labelStyle: TextStyle(
-                          fontWeight: _selectedGroup == group ? FontWeight.bold : FontWeight.normal,
-                          color: _selectedGroup == group ? kCrimson : null,
-                        ),
-                        onSelected: (selected) {
-                          if (selected) setState(() => _selectedGroup = group);
-                        },
-                      ),
+                    IconButton(
+                      tooltip: Strings.cancel,
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
+                Text(
+                  Strings.bloodGroup,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // রক্তের গ্রুপ নির্বাচক (অনুভূমিক স্ক্রোল পিলস)
+                SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: AppConstants.bloodGroups.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 6),
+                    itemBuilder: (context, index) {
+                      final group = AppConstants.bloodGroups[index];
+                      final isSelected = _selectedGroup == group;
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedGroup = group);
+                          },
+                          borderRadius: BorderRadius.circular(19),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeInOut,
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? kCrimson
+                                  : (isDark ? const Color(0xFF1E232A) : const Color(0xFFF3F4F6)),
+                              borderRadius: BorderRadius.circular(19),
+                              border: Border.all(
+                                color: isSelected
+                                    ? kCrimson
+                                    : (isDark ? const Color(0xFF2E3846) : const Color(0xFFE5E7EB)),
+                                width: isSelected ? 1.5 : 1,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: kCrimson.withValues(alpha: 0.35),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Text(
+                              group,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : (isDark ? Colors.white70 : const Color(0xFF374151)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // হাসপাতাল / স্থান (পূর্ণাঙ্গ প্রস্থ)
+                TextField(
+                  controller: _hospitalController,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: Strings.patientHospital,
+                    hintText: 'হাসপাতালের নাম ও এলাকা লিখুন',
+                    prefixIcon: Icon(Icons.local_hospital_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // রক্তের পরিমাণ ও কখন প্রয়োজন (একটি সুষম রো)
                 Row(
                   children: [
                     Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _hospitalController,
-                        decoration: const InputDecoration(
-                          labelText: Strings.patientHospital,
-                          hintText: Strings.hospitalHint,
-                          prefixIcon: Icon(Icons.local_hospital_outlined),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _unitsController,
+                      child: DropdownButtonFormField<String>(
+                        value: _units,
                         decoration: const InputDecoration(
                           labelText: Strings.unitsNeeded,
-                          hintText: Strings.unitsHint,
+                          prefixIcon: Icon(Icons.water_drop_outlined),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  children: [
-                    for (final u in const ['১ ব্যাগ', '২ ব্যাগ', '৩ ব্যাগ', '৪ ব্যাগ'])
-                      ActionChip(
-                        label: Text(u, style: const TextStyle(fontSize: 11)),
-                        padding: EdgeInsets.zero,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          _unitsController.text = u;
+                        items: [
+                          for (final u in _unitOptions)
+                            DropdownMenuItem(
+                              value: u,
+                              child: Text(u, style: const TextStyle(fontSize: 13)),
+                            ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _units = val);
+                          }
                         },
                       ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: TextField(
-                        controller: _whenController,
+                      child: DropdownButtonFormField<String>(
+                        value: _when,
                         decoration: const InputDecoration(
                           labelText: Strings.whenNeeded,
-                          hintText: Strings.whenHint,
                           prefixIcon: Icon(Icons.schedule_outlined),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          labelText: Strings.contactPhone,
-                          prefixIcon: Icon(Icons.phone_outlined),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  children: [
-                    for (final w in const ['জরুরি / আজ', 'আজ সন্ধ্যা', 'আজ রাত', 'আগামীকাল'])
-                      ActionChip(
-                        label: Text(w, style: const TextStyle(fontSize: 11)),
-                        padding: EdgeInsets.zero,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          _whenController.text = w;
+                        items: [
+                          for (final w in _whenOptions)
+                            DropdownMenuItem(
+                              value: w,
+                              child: Text(w, style: const TextStyle(fontSize: 13)),
+                            ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _when = val);
+                          }
                         },
                       ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
+
+                // যোগাযোগের ফোন নম্বর (পূর্ণাঙ্গ প্রস্থ, ট্রাঙ্কেশন রোধে)
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(
+                    labelText: Strings.contactPhone,
+                    hintText: 'যেমন: ০১৭১XXXXXXXX',
+                    prefixIcon: const Icon(Icons.phone_outlined),
+                    suffixIcon: _phoneController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear_rounded, size: 18),
+                            tooltip: Strings.clear,
+                            onPressed: () {
+                              _phoneController.clear();
+                              setState(() {});
+                            },
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.content_paste_rounded, size: 18),
+                            tooltip: 'পেস্ট করুন',
+                            onPressed: () async {
+                              final data = await Clipboard.getData(Clipboard.kTextPlain);
+                              if (data?.text != null && data!.text!.trim().isNotEmpty) {
+                                HapticFeedback.lightImpact();
+                                _phoneController.text = data.text!.trim();
+                                setState(() {});
+                              }
+                            },
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // রোগীর সমস্যা / কারণ (ঐচ্ছিক)
                 TextField(
                   controller: _reasonController,
+                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     labelText: Strings.reason,
                     hintText: Strings.reasonHint,
                     prefixIcon: Icon(Icons.notes_outlined),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
+                  runSpacing: 6,
                   children: [
                     for (final r in const [
                       'সিজারিয়ান / প্রসব',
                       'জরুরি অপারেশন',
                       'থ্যালাসেমিয়া',
-                      'দুর্ঘটনা / ট্রমা'
+                      'দুর্ঘটনা / ট্রমা',
                     ])
                       ActionChip(
                         label: Text(r, style: const TextStyle(fontSize: 11)),
                         padding: EdgeInsets.zero,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
+                        backgroundColor: _reasonController.text == r
+                            ? kCrimson.withValues(alpha: 0.15)
+                            : null,
+                        side: _reasonController.text == r
+                            ? BorderSide(color: kCrimson.withValues(alpha: 0.5))
+                            : null,
                         onPressed: () {
                           HapticFeedback.selectionClick();
-                          _reasonController.text = r;
+                          if (_reasonController.text == r) {
+                            _reasonController.clear();
+                          } else {
+                            _reasonController.text = r;
+                          }
+                          setState(() {});
                         },
                       ),
                   ],
@@ -291,16 +397,12 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
 
                 // লাইভ সোশ্যাল পোস্ট প্রিভিউ বক্স
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: theme.brightness == Brightness.dark
-                        ? const Color(0xFF1E2228)
-                        : const Color(0xFFF8FAFC),
+                    color: isDark ? const Color(0xFF1B2028) : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: theme.brightness == Brightness.dark
-                          ? Colors.white12
-                          : const Color(0xFFE2E8F0),
+                      color: isDark ? const Color(0xFF2C3545) : const Color(0xFFCBD5E1),
                     ),
                   ),
                   child: Column(
@@ -308,60 +410,119 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.visibility_outlined, size: 15, color: theme.colorScheme.primary),
+                          const Icon(Icons.visibility_outlined, size: 16, color: kCrimson),
                           const SizedBox(width: 6),
-                          Text(
+                          const Text(
                             Strings.socialPreviewTitle,
                             style: TextStyle(
-                              fontSize: 11.5,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
+                              color: kCrimson,
+                            ),
+                          ),
+                          const Spacer(),
+                          InkWell(
+                            onTap: _copy,
+                            borderRadius: BorderRadius.circular(4),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.copy_rounded, size: 13, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'কপি',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       SelectableText(
                         _buildBroadcastText(),
                         style: TextStyle(
-                          fontSize: 12,
-                          height: 1.4,
-                          color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+                          fontSize: 12.5,
+                          height: 1.45,
+                          color: isDark ? Colors.white70 : Colors.black87,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _copy,
-                        icon: const Icon(Icons.copy_outlined, size: 18),
-                        label: const Text(Strings.copyPost),
+                // একশন বাটনসমূহ (পোস্ট কপি ও শেয়ার)
+                SizedBox(
+                  height: 44,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonalIcon(
+                          onPressed: _copy,
+                          style: FilledButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                          ),
+                          icon: const Icon(Icons.copy_rounded, size: 17),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              Strings.copyPost,
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _share,
-                        icon: const Icon(Icons.share_outlined, size: 18),
-                        label: const Text(Strings.sharePost),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _share,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF25D366),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                          ),
+                          icon: const Icon(Icons.share_rounded, size: 17),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              Strings.sharePost,
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 10),
+
+                // RedGrid-এ ডোনার খোঁজার মূল বাটন
                 FilledButton.icon(
                   onPressed: _findMatchingDonors,
-                  icon: const Icon(Icons.search),
-                  label: Text('RedGrid-এ $_selectedGroup এর প্রস্তুত ডোনার খুঁজুন'),
+                  icon: const Icon(Icons.person_search_rounded, size: 20),
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'RedGrid-এ $_selectedGroup এর প্রস্তুত ডোনার খুঁজুন',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                    ),
+                  ),
                   style: FilledButton.styleFrom(
                     backgroundColor: kCrimson,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    minimumSize: const Size.fromHeight(46),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
                   ),
                 ),
               ],
