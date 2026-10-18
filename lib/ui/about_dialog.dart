@@ -292,6 +292,12 @@ class AboutAppDialog extends StatelessWidget {
                           color: const Color(0xFFF7941D),
                           isDark: isDark,
                         ),
+                        _buildBadge(
+                          icon: Icons.account_balance_rounded,
+                          label: 'সেলফিন (CellFin)',
+                          color: const Color(0xFF0072BC),
+                          isDark: isDark,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 14),

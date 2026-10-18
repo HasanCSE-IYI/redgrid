@@ -18,5 +18,12 @@ void main() {
       final wa = ContactService.formatForWhatsApp(Strings.devPhone);
       expect(wa, '8801727328200');
     });
+
+    test('supported channels include WhatsApp, bKash, Nagad, and CellFin', () {
+      expect(Strings.supportedChannels, contains('WhatsApp'));
+      expect(Strings.supportedChannels, contains('বিকাশ'));
+      expect(Strings.supportedChannels, contains('নগদ'));
+      expect(Strings.supportedChannels, contains('সেলফিন'));
+    });
   });
 }

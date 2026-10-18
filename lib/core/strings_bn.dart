@@ -121,7 +121,7 @@ class Strings {
   static const sadaqahSupportTitle = 'সাদাকায়ে জারিয়া হিসেবে সাপোর্ট';
   static const sadaqahSupportDesc =
       'জরুরি মুহূর্তে রক্ত সন্ধান সহজ করে মানুষের জীবন বাঁচাতে এই প্রজেক্টটি বিনামূল্যে উন্মুক্ত রাখা হয়েছে। এর উন্নয়ন ও ধারাবাহিক সার্বিক সহায়তায় আপনিও সাদাকায়ে জারিয়া হিসেবে পাশে থাকতে পারেন।';
-  static const supportedChannels = 'WhatsApp • বিকাশ • নগদ';
+  static const supportedChannels = 'WhatsApp • বিকাশ • নগদ • সেলফিন';
   static const copyNumber = 'নম্বর কপি';
   static const numberCopied = 'নম্বর কপি করা হয়েছে: +8801727328200';
   static const backupWarning =
