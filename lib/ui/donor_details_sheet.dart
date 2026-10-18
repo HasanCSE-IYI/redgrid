@@ -34,61 +34,26 @@ class DonorDetailsSheet extends ConsumerStatefulWidget {
 class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
   bool _busy = false;
 
-  Future<void> _call() async {
-    final ok = await ContactService.makeCall(widget.donor.phone);
-    if (!ok && mounted) {
-      AppNotificationToast.show(context, message: Strings.callFailed, color: kCrimson);
-    }
-  }
+  Future<void> _call() => DonorContactActions.call(context, widget.donor.phone);
 
-  Future<void> _sendWhatsApp() async {
-    final donor = widget.donor;
-    final ok = await ContactService.contactDonorWhatsApp(
-      donorName: donor.name,
-      bloodGroup: donor.bloodGroup,
-      phone: donor.phone,
-    );
-    if (!ok && mounted) {
-      AppNotificationToast.show(context, message: Strings.whatsappFailed, color: kCrimson);
-    }
-  }
+  Future<void> _sendWhatsApp() => DonorContactActions.whatsapp(
+        context,
+        phone: widget.donor.phone,
+        donorName: widget.donor.name,
+        bloodGroup: widget.donor.bloodGroup,
+      );
 
-  Future<void> _sendSms() async {
-    final donor = widget.donor;
-    final message = ContactService.composeDonorMessage(
-      donorName: donor.name,
-      bloodGroup: donor.bloodGroup,
-    );
-    final ok = await ContactService.openSms(phone: donor.phone, message: message);
-    if (!ok && mounted) {
-      AppNotificationToast.show(context, message: Strings.smsFailed, color: kCrimson);
-    }
-  }
+  Future<void> _sendSms() => DonorContactActions.sms(
+        context,
+        phone: widget.donor.phone,
+        donorName: widget.donor.name,
+        bloodGroup: widget.donor.bloodGroup,
+      );
 
   Future<void> _addDonationDate() async {
-    final donor = widget.donor;
-    final picked = await pickDonationDate(context, firstDate: DateTime(1970));
-    if (picked == null || !mounted) return;
-
-    final notifier = ref.read(donorListProvider.notifier);
-    final date = isoDate(picked);
-
     setState(() => _busy = true);
-    try {
-      final result = await notifier.markDonated(donor.id!, date);
-      if (!mounted) return;
-      if (result == MarkDonatedResult.alreadyLogged) {
-        AppNotificationToast.show(context, message: Strings.alreadyLogged);
-      } else {
-        AppNotificationToast.show(context, message: Strings.donationSaved);
-      }
-    } catch (_) {
-      if (mounted) {
-        AppNotificationToast.show(context, message: Strings.genericError, color: kCrimson);
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    await handleMarkDonation(context, ref, widget.donor);
+    if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _deleteDate(String date) async {

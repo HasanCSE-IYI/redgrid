@@ -16,12 +16,8 @@ class AboutAppDialog extends StatelessWidget {
     );
   }
 
-  Future<void> _call(BuildContext context) async {
-    final ok = await ContactService.makeCall(Strings.devPhone);
-    if (!ok && context.mounted) {
-      AppNotificationToast.show(context, message: Strings.callFailed, color: kCrimson);
-    }
-  }
+  Future<void> _call(BuildContext context) =>
+      DonorContactActions.call(context, Strings.devPhone);
 
   Future<void> _whatsapp(BuildContext context) async {
     final ok = await ContactService.openWhatsApp(

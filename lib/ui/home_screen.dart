@@ -169,7 +169,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 border: Border.all(color: kEligibleGreen.withValues(alpha: 0.3)),
               ),
               child: const Text(
-                'অফলাইন',
+                Strings.offlineBadge,
                 style: TextStyle(
                   fontSize: 9.5,
                   fontWeight: FontWeight.bold,

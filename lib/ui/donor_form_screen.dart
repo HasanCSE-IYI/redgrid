@@ -153,7 +153,7 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                           Icon(Icons.person_rounded, size: 18, color: theme.colorScheme.primary),
                           const SizedBox(width: 8),
                           Text(
-                            'প্রাথমিক তথ্য',
+                            Strings.sectionPersonalInfo,
                             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -275,7 +275,7 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                           Icon(Icons.phone_rounded, size: 18, color: theme.colorScheme.primary),
                           const SizedBox(width: 8),
                           Text(
-                            'যোগাযোগ ও অবস্থান',
+                            Strings.sectionContactLocation,
                             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],
@@ -326,7 +326,7 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                           Icon(Icons.history_rounded, size: 18, color: theme.colorScheme.primary),
                           const SizedBox(width: 8),
                           Text(
-                            'রক্তদানের তথ্য ও সম্মতি',
+                            Strings.sectionDonationConsent,
                             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ],

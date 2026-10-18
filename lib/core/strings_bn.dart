@@ -99,6 +99,15 @@ class Strings {
   static const clearFilter = 'ফিল্টার মুছুন';
   static const viewDetailed = 'বিস্তারিত ভিউ';
   static const viewCompact = 'কমপ্যাক্ট ভিউ';
+  static const offlineBadge = 'অফলাইন';
+  static const waitingStatus = 'অপেক্ষমান';
+  static const sectionPersonalInfo = 'ব্যক্তিগত তথ্য';
+  static const sectionContactLocation = 'যোগাযোগ ও অবস্থান';
+  static const sectionDonationConsent = 'রক্তদানের তথ্য ও সম্মতি';
+  static const socialPreviewTitle = 'সোশ্যাল মিডিয়া পোস্টের প্রিভিউ (Facebook / WhatsApp):';
+  static const matchBadge = 'ম্যাচ';
+  static const donorReadyTooltip = 'ডোনার রক্তদানে সম্পূর্ণ প্রস্তুত';
+  static const nextEligiblePrefix = 'পরবর্তী সম্ভাব্য তারিখ:';
   static String donorsFound(Object count) => '$count জন ডোনার পাওয়া গেছে';
 
   // হোম ড্যাশবোর্ড পরিসংখ্যান (Summary Stats)

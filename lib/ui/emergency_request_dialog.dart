@@ -311,7 +311,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                           Icon(Icons.visibility_outlined, size: 15, color: theme.colorScheme.primary),
                           const SizedBox(width: 6),
                           Text(
-                            'সোশ্যাল মিডিয়া পোস্টের প্রিভিউ (Facebook / WhatsApp):',
+                            Strings.socialPreviewTitle,
                             style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.bold,

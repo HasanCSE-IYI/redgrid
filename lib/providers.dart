@@ -50,50 +50,44 @@ class DonorListNotifier extends AsyncNotifier<List<Donor>> {
     return ref.watch(donorRepositoryProvider).search(filter);
   }
 
-  Future<void> add(Donor donor) async {
-    await _repo.insert(donor);
+  void _notifyMutation([int? donorId]) {
     ref.invalidateSelf();
     ref.invalidate(donorStatsProvider);
+    if (donorId != null) {
+      ref.invalidate(donationDatesProvider(donorId));
+    }
     ref.read(syncStatusProvider.notifier).triggerAutoSync();
+  }
+
+  Future<void> add(Donor donor) async {
+    await _repo.insert(donor);
+    _notifyMutation();
   }
 
   Future<void> edit(Donor donor) async {
     await _repo.update(donor);
-    ref.invalidateSelf();
-    ref.invalidate(donorStatsProvider);
-    ref.read(syncStatusProvider.notifier).triggerAutoSync();
+    _notifyMutation();
   }
 
   Future<void> remove(int id) async {
     await _repo.delete(id);
-    ref.invalidateSelf();
-    ref.invalidate(donorStatsProvider);
-    ref.read(syncStatusProvider.notifier).triggerAutoSync();
+    _notifyMutation(id);
   }
 
   Future<MarkDonatedResult> markDonated(int donorId, String date) async {
     final result = await _repo.markDonated(donorId, date);
-    ref.invalidateSelf();
-    ref.invalidate(donorStatsProvider);
-    ref.invalidate(donationDatesProvider(donorId));
-    ref.read(syncStatusProvider.notifier).triggerAutoSync();
+    _notifyMutation(donorId);
     return result;
   }
 
   Future<void> undo(int donorId, String date, String? previousLastDate) async {
     await _repo.undoDonation(donorId, date, previousLastDate);
-    ref.invalidateSelf();
-    ref.invalidate(donorStatsProvider);
-    ref.invalidate(donationDatesProvider(donorId));
-    ref.read(syncStatusProvider.notifier).triggerAutoSync();
+    _notifyMutation(donorId);
   }
 
   Future<void> deleteDonationDate(int donorId, String date) async {
     await _repo.deleteDonationDate(donorId, date);
-    ref.invalidateSelf();
-    ref.invalidate(donorStatsProvider);
-    ref.invalidate(donationDatesProvider(donorId));
-    ref.read(syncStatusProvider.notifier).triggerAutoSync();
+    _notifyMutation(donorId);
   }
 }
 

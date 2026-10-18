@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app.dart';
 import '../core/date_format.dart';
 import '../core/digits.dart';
 import '../core/strings_bn.dart';
+import '../data/donor.dart';
 import '../domain/eligibility.dart';
 import '../domain/milestones.dart';
+import '../providers.dart';
+import '../services/contact_service.dart';
 
 export 'notification_center_sheet.dart' show AppNotificationToast;
 
@@ -68,7 +72,7 @@ class BloodGroupBadge extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
-                  'ম্যাচ',
+                  Strings.matchBadge,
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
@@ -178,11 +182,11 @@ class EligibilityPill extends StatelessWidget {
     final String tooltip;
     if (check.eligible) {
       label = Strings.readyToDonate;
-      tooltip = 'ডোনার রক্তদানে সম্পূর্ণ প্রস্তুত';
+      tooltip = Strings.donorReadyTooltip;
     } else {
       final daysBn = toBanglaDigits(check.daysLeft);
       label = 'আর $daysBn দিন পর যোগ্য';
-      tooltip = 'পরবর্তী সম্ভাব্য তারিখ: ${formatDateBn(check.nextEligibleDate!)}';
+      tooltip = '${Strings.nextEligiblePrefix} ${formatDateBn(check.nextEligibleDate!)}';
     }
 
     return Tooltip(
@@ -326,4 +330,139 @@ Future<DateTime?> pickDonationDate(
     firstDate: firstDate ?? DateTime(2000),
     lastDate: lastDate ?? now,
   );
+}
+
+/// ডোনার কার্ডের ডায়নামিক বর্ডার (কমপ্যাক্ট ও ফুল কার্ড উভয়ের জন্য)
+BorderSide donorCardBorderSide(ThemeData theme, {required bool isCompatibleMatch}) {
+  final isDark = theme.brightness == Brightness.dark;
+  return BorderSide(
+    color: isCompatibleMatch
+        ? Colors.amber.shade400
+        : theme.colorScheme.outlineVariant.withValues(alpha: isDark ? 0.25 : 0.45),
+    width: isCompatibleMatch ? 1.5 : 1.0,
+  );
+}
+
+/// ডোনারের সাথে যোগাযোগের সার্বজনীন অ্যাকশন হেল্পার
+class DonorContactActions {
+  DonorContactActions._();
+
+  static Future<void> call(BuildContext context, String phone) async {
+    final ok = await ContactService.makeCall(phone);
+    if (!ok && context.mounted) {
+      AppNotificationToast.show(
+        context,
+        message: Strings.callFailed,
+        icon: Icons.call_end_rounded,
+        color: kCrimson,
+      );
+    }
+  }
+
+  static Future<void> whatsapp(
+    BuildContext context, {
+    required String phone,
+    required String donorName,
+    required String bloodGroup,
+    String? patientHospital,
+  }) async {
+    final ok = await ContactService.contactDonorWhatsApp(
+      phone: phone,
+      donorName: donorName,
+      bloodGroup: bloodGroup,
+      patientHospital: patientHospital,
+    );
+    if (!ok && context.mounted) {
+      AppNotificationToast.show(
+        context,
+        message: Strings.whatsappFailed,
+        icon: Icons.chat_bubble_outline_rounded,
+        color: kCrimson,
+      );
+    }
+  }
+
+  static Future<void> sms(
+    BuildContext context, {
+    required String phone,
+    required String donorName,
+    required String bloodGroup,
+    String? patientHospital,
+  }) async {
+    final message = ContactService.composeDonorMessage(
+      donorName: donorName,
+      bloodGroup: bloodGroup,
+      patientHospital: patientHospital,
+    );
+    final ok = await ContactService.openSms(phone: phone, message: message);
+    if (!ok && context.mounted) {
+      AppNotificationToast.show(
+        context,
+        message: Strings.smsFailed,
+        icon: Icons.sms_failed_rounded,
+        color: kCrimson,
+      );
+    }
+  }
+
+  static Future<void> copyPhone(BuildContext context, String phone) async {
+    await ContactService.copyToClipboard(phone);
+    if (context.mounted) {
+      AppNotificationToast.show(
+        context,
+        message: Strings.phoneCopied,
+        icon: Icons.copy_rounded,
+      );
+    }
+  }
+}
+
+/// রক্তদানের তারিখ নির্বাচন ও ডাটাবেজে রেকর্ড করার সার্বজনীন লজিক
+Future<bool> handleMarkDonation(
+  BuildContext context,
+  WidgetRef ref,
+  Donor donor, {
+  DateTime? initialDate,
+}) async {
+  final picked = initialDate ?? await pickDonationDate(context, firstDate: DateTime(1970));
+  if (picked == null || !context.mounted) return false;
+
+  final notifier = ref.read(donorListProvider.notifier);
+  final previousLast = donor.lastDonationDate;
+  final date = isoDate(picked);
+
+  try {
+    final result = await notifier.markDonated(donor.id!, date);
+    if (!context.mounted) return false;
+    if (result == MarkDonatedResult.alreadyLogged) {
+      AppNotificationToast.show(
+        context,
+        message: Strings.alreadyLogged,
+        icon: Icons.info_outline_rounded,
+      );
+      return false;
+    } else {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        content: const Text(Strings.donationSaved),
+        action: SnackBarAction(
+          label: Strings.undo,
+          onPressed: () => notifier.undo(donor.id!, date, previousLast),
+        ),
+      ));
+      return true;
+    }
+  } catch (_) {
+    if (context.mounted) {
+      AppNotificationToast.show(
+        context,
+        message: Strings.genericError,
+        icon: Icons.error_outline_rounded,
+        color: kCrimson,
+      );
+    }
+    return false;
+  }
 }

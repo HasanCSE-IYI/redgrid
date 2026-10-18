@@ -33,97 +33,30 @@ class DonorCard extends ConsumerStatefulWidget {
 class _DonorCardState extends ConsumerState<DonorCard> {
   bool _busy = false;
 
-  Future<void> _call() async {
-    final ok = await ContactService.makeCall(widget.donor.phone);
-    if (!ok && mounted) {
-      AppNotificationToast.show(
-        context,
-        message: Strings.callFailed,
-        icon: Icons.call_end_rounded,
-        color: kCrimson,
-      );
-    }
-  }
+  Future<void> _call() => DonorContactActions.call(context, widget.donor.phone);
 
-  Future<void> _whatsapp() async {
-    final donor = widget.donor;
-    final ok = await ContactService.contactDonorWhatsApp(
-      phone: donor.phone,
-      donorName: donor.name,
-      bloodGroup: donor.bloodGroup,
-    );
-    if (!ok && mounted) {
-      AppNotificationToast.show(
+  Future<void> _whatsapp() => DonorContactActions.whatsapp(
         context,
-        message: Strings.whatsappFailed,
-        icon: Icons.chat_bubble_outline_rounded,
+        phone: widget.donor.phone,
+        donorName: widget.donor.name,
+        bloodGroup: widget.donor.bloodGroup,
       );
-    }
-  }
 
-  Future<void> _sms() async {
-    final donor = widget.donor;
-    final message = ContactService.composeDonorMessage(
-      donorName: donor.name,
-      bloodGroup: donor.bloodGroup,
-    );
-    final ok = await ContactService.openSms(phone: donor.phone, message: message);
-    if (!ok && mounted) {
-      AppNotificationToast.show(
+  Future<void> _sms() => DonorContactActions.sms(
         context,
-        message: Strings.smsFailed,
-        icon: Icons.sms_failed_rounded,
+        phone: widget.donor.phone,
+        donorName: widget.donor.name,
+        bloodGroup: widget.donor.bloodGroup,
       );
-    }
-  }
 
   void _showDetails() {
     DonorDetailsSheet.show(context, widget.donor);
   }
 
   Future<void> _donatedToday() async {
-    final picked = await pickDonationDate(context);
-    if (picked == null || !mounted) return;
-
-    final donor = widget.donor;
-    final notifier = ref.read(donorListProvider.notifier);
-    final previousLast = donor.lastDonationDate;
-    final date = isoDate(picked);
-
     setState(() => _busy = true);
-    try {
-      final result = await notifier.markDonated(donor.id!, date);
-      if (!mounted) return;
-      if (result == MarkDonatedResult.alreadyLogged) {
-        AppNotificationToast.show(
-          context,
-          message: Strings.alreadyLogged,
-          icon: Icons.info_outline_rounded,
-        );
-      } else {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          content: const Text(Strings.donationSaved),
-          action: SnackBarAction(
-            label: Strings.undo,
-            onPressed: () => notifier.undo(donor.id!, date, previousLast),
-          ),
-        ));
-      }
-    } catch (_) {
-      if (mounted) {
-        AppNotificationToast.show(
-          context,
-          message: Strings.genericError,
-          icon: Icons.error_outline_rounded,
-          color: kCrimson,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    await handleMarkDonation(context, ref, widget.donor);
+    if (mounted) setState(() => _busy = false);
   }
 
   Future<void> _delete() async {
@@ -156,17 +89,19 @@ class _DonorCardState extends ConsumerState<DonorCard> {
     }
   }
 
+  List<PopupMenuEntry<_CardAction>> _buildMenuItems() => const [
+    PopupMenuItem(value: _CardAction.details, child: Text(Strings.donorDetails)),
+    PopupMenuItem(value: _CardAction.copyPhone, child: Text(Strings.copyPhone)),
+    PopupMenuItem(value: _CardAction.edit, child: Text(Strings.edit)),
+    PopupMenuItem(value: _CardAction.delete, child: Text(Strings.delete)),
+  ];
+
   void _onAction(_CardAction action) {
     switch (action) {
       case _CardAction.details:
         _showDetails();
       case _CardAction.copyPhone:
-        ContactService.copyToClipboard(widget.donor.phone);
-        AppNotificationToast.show(
-          context,
-          message: Strings.phoneCopied,
-          icon: Icons.copy_rounded,
-        );
+        DonorContactActions.copyPhone(context, widget.donor.phone);
       case _CardAction.edit:
         Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => DonorFormScreen(donor: widget.donor)),
@@ -197,12 +132,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: isCompatibleMatch
-                ? Colors.amber.shade400
-                : theme.colorScheme.outlineVariant.withValues(alpha: isDark ? 0.25 : 0.45),
-            width: isCompatibleMatch ? 1.5 : 1.0,
-          ),
+          side: donorCardBorderSide(theme, isCompatibleMatch: isCompatibleMatch),
         ),
         child: InkWell(
           onTap: _showDetails,
@@ -274,7 +204,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            isEligible ? Strings.readyToDonate : 'অপেক্ষমান',
+                            isEligible ? Strings.readyToDonate : Strings.waitingStatus,
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -311,12 +241,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                   ),
                   padding: EdgeInsets.zero,
                   onSelected: _onAction,
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: _CardAction.details, child: Text(Strings.donorDetails)),
-                    PopupMenuItem(value: _CardAction.copyPhone, child: Text(Strings.copyPhone)),
-                    PopupMenuItem(value: _CardAction.edit, child: Text(Strings.edit)),
-                    PopupMenuItem(value: _CardAction.delete, child: Text(Strings.delete)),
-                  ],
+                  itemBuilder: (_) => _buildMenuItems(),
                 ),
               ],
             ),
@@ -330,12 +255,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isCompatibleMatch
-              ? Colors.amber.shade400
-              : theme.colorScheme.outlineVariant.withValues(alpha: isDark ? 0.25 : 0.45),
-          width: isCompatibleMatch ? 1.5 : 1.0,
-        ),
+        side: donorCardBorderSide(theme, isCompatibleMatch: isCompatibleMatch),
       ),
       child: InkWell(
         onTap: _showDetails,
@@ -447,12 +367,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                     onSelected: _onAction,
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: _CardAction.details, child: Text(Strings.donorDetails)),
-                      PopupMenuItem(value: _CardAction.copyPhone, child: Text(Strings.copyPhone)),
-                      PopupMenuItem(value: _CardAction.edit, child: Text(Strings.edit)),
-                      PopupMenuItem(value: _CardAction.delete, child: Text(Strings.delete)),
-                    ],
+                    itemBuilder: (_) => _buildMenuItems(),
                   ),
                 ],
               ),
