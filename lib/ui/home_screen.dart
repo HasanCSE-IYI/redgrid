@@ -9,6 +9,7 @@ import '../app.dart';
 import '../core/areas.dart';
 import '../core/digits.dart';
 import '../core/strings_bn.dart';
+import '../data/donor_repository.dart' show DonorFilter;
 import '../domain/compatibility.dart';
 import '../providers.dart';
 import '../services/sync_service.dart';
