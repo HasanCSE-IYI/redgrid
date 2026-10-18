@@ -202,12 +202,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
       body: SafeArea(
-        child: NotificationListener<UserScrollNotification>(
+        child: NotificationListener<ScrollNotification>(
           onNotification: (notification) {
-            if (notification.direction == ScrollDirection.reverse) {
-              if (_isFabVisible) setState(() => _isFabVisible = false);
-            } else if (notification.direction == ScrollDirection.forward) {
-              if (!_isFabVisible) setState(() => _isFabVisible = true);
+            if (notification is UserScrollNotification) {
+              if (notification.direction == ScrollDirection.reverse) {
+                if (_isFabVisible) setState(() => _isFabVisible = false);
+              } else if (notification.direction == ScrollDirection.forward) {
+                if (!_isFabVisible) setState(() => _isFabVisible = true);
+              }
             }
             return false;
           },
@@ -602,9 +604,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
-        ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   void _showSyncDialog(BuildContext context) {

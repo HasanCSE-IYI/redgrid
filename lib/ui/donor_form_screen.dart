@@ -23,6 +23,9 @@ class DonorFormScreen extends ConsumerStatefulWidget {
 }
 
 class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
+  static const _positiveGroups = ['A+', 'B+', 'O+', 'AB+'];
+  static const _negativeGroups = ['A-', 'B-', 'O-', 'AB-', 'Oh'];
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _phone;
@@ -172,15 +175,15 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                       children: [
                         Row(
                           children: [
-                            for (int i = 0; i < const ['A+', 'B+', 'O+', 'AB+'].length; i++) ...[
+                            for (int i = 0; i < _positiveGroups.length; i++) ...[
                               if (i > 0) const SizedBox(width: 8),
                               Expanded(
                                 child: _BloodGroupFormChip(
-                                  group: const ['A+', 'B+', 'O+', 'AB+'][i],
-                                  isSelected: state.value == const ['A+', 'B+', 'O+', 'AB+'][i],
+                                  group: _positiveGroups[i],
+                                  isSelected: state.value == _positiveGroups[i],
                                   onTap: () {
                                     HapticFeedback.selectionClick();
-                                    final g = const ['A+', 'B+', 'O+', 'AB+'][i];
+                                    final g = _positiveGroups[i];
                                     _bloodGroup = g;
                                     state.didChange(g);
                                   },
@@ -192,15 +195,15 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            for (int i = 0; i < const ['A-', 'B-', 'O-', 'AB-', 'Oh'].length; i++) ...[
+                            for (int i = 0; i < _negativeGroups.length; i++) ...[
                               if (i > 0) const SizedBox(width: 6),
                               Expanded(
                                 child: _BloodGroupFormChip(
-                                  group: const ['A-', 'B-', 'O-', 'AB-', 'Oh'][i],
-                                  isSelected: state.value == const ['A-', 'B-', 'O-', 'AB-', 'Oh'][i],
+                                  group: _negativeGroups[i],
+                                  isSelected: state.value == _negativeGroups[i],
                                   onTap: () {
                                     HapticFeedback.selectionClick();
-                                    final g = const ['A-', 'B-', 'O-', 'AB-', 'Oh'][i];
+                                    final g = _negativeGroups[i];
                                     _bloodGroup = g;
                                     state.didChange(g);
                                   },
