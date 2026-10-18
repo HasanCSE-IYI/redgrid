@@ -40,6 +40,7 @@ class Strings {
   static const edit = 'সম্পাদনা';
   static const deleteTitle = 'ডোনার মুছে ফেলবেন?';
   static const deleteBody = 'ডোনার ও তার সব রক্তদানের লগ স্থায়ীভাবে মুছে যাবে।';
+  static const donorDeleted = 'ডোনার মুছে ফেলা হয়েছে';
   static const genericError = 'কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।';
 
   static const eligible = 'রক্ত দিতে যোগ্য';
