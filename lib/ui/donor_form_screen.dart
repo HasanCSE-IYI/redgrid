@@ -139,177 +139,292 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             children: [
-              TextFormField(
-                controller: _name,
-                maxLength: AppConstants.maxNameLength,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: Strings.name),
-                validator: (v) => _requiredText(v, max: AppConstants.maxNameLength),
-              ),
-              const SizedBox(height: 8),
-              Text(Strings.gender, style: theme.textTheme.titleSmall),
-              const SizedBox(height: 8),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: AppConstants.genderMale, label: Text(Strings.male)),
-                  ButtonSegment(value: AppConstants.genderFemale, label: Text(Strings.female)),
-                ],
-                selected: {_gender},
-                onSelectionChanged: (selection) {
-                  HapticFeedback.selectionClick();
-                  setState(() => _gender = selection.first);
-                },
-              ),
-              const SizedBox(height: 16),
-              FormField<String>(
-                initialValue: _bloodGroup,
-                validator: (value) => value == null ? Strings.required : null,
-                builder: (state) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(Strings.bloodGroup, style: theme.textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    Column(
-                      children: [
-                        Row(
-                          children: [
-                            for (int i = 0; i < AppConstants.positiveBloodGroups.length; i++) ...[
-                              if (i > 0) const SizedBox(width: 8),
-                              Expanded(
-                                child: _BloodGroupFormChip(
-                                  group: AppConstants.positiveBloodGroups[i],
-                                  isSelected: state.value == AppConstants.positiveBloodGroups[i],
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    final g = AppConstants.positiveBloodGroups[i];
-                                    _bloodGroup = g;
-                                    state.didChange(g);
-                                  },
-                                ),
-                              ),
-                            ],
-                          ],
+              // 1. প্রাথমিক তথ্য কার্ড
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.person_rounded, size: 18, color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'প্রাথমিক তথ্য',
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _name,
+                        maxLength: AppConstants.maxNameLength,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: Strings.name,
+                          prefixIcon: Icon(Icons.badge_outlined),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            for (int i = 0; i < AppConstants.negativeBloodGroups.length; i++) ...[
-                              if (i > 0) const SizedBox(width: 6),
-                              Expanded(
-                                child: _BloodGroupFormChip(
-                                  group: AppConstants.negativeBloodGroups[i],
-                                  isSelected: state.value == AppConstants.negativeBloodGroups[i],
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    final g = AppConstants.negativeBloodGroups[i];
-                                    _bloodGroup = g;
-                                    state.didChange(g);
-                                  },
-                                ),
-                              ),
-                            ],
+                        validator: (v) => _requiredText(v, max: AppConstants.maxNameLength),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(Strings.gender, style: theme.textTheme.labelMedium),
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(
+                              value: AppConstants.genderMale,
+                              label: Text(Strings.male),
+                              icon: Icon(Icons.male_rounded),
+                            ),
+                            ButtonSegment(
+                              value: AppConstants.genderFemale,
+                              label: Text(Strings.female),
+                              icon: Icon(Icons.female_rounded),
+                            ),
                           ],
-                        ),
-                      ],
-                    ),
-                    if (state.hasError)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          state.errorText!,
-                          style: TextStyle(color: theme.colorScheme.error),
+                          selected: {_gender},
+                          onSelectionChanged: (selection) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _gender = selection.first);
+                          },
                         ),
                       ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: Strings.phone),
-                validator: (v) => PhoneNormalizer.normalize(v) == null ? Strings.invalidPhone : null,
-              ),
-              const SizedBox(height: 16),
-              SuggestField(
-                label: Strings.district,
-                initialValue: _district,
-                maxLength: AppConstants.maxPlaceLength,
-                optionsBuilder: () => kAreasByDistrict.keys.toList(),
-                onChanged: (value) => _district = value,
-                validator: (v) => _requiredText(v, max: AppConstants.maxPlaceLength),
-              ),
-              SuggestField(
-                label: Strings.area,
-                initialValue: _area,
-                maxLength: AppConstants.maxPlaceLength,
-                optionsBuilder: () => kAreasByDistrict[_district.trim()] ?? const [],
-                onChanged: (value) => _area = value,
-                validator: (v) => _requiredText(v, max: AppConstants.maxPlaceLength),
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(Strings.lastDonation),
-                subtitle: Builder(
-                  builder: (context) {
-                    final parsed = parseIsoDate(_lastDate);
-                    return Text(parsed == null ? Strings.notSet : formatDateBn(parsed));
-                  },
-                ),
-                onTap: _pickDate,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_lastDate != null)
-                      IconButton(
-                        tooltip: Strings.clear,
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() => _lastDate = null),
+                      const SizedBox(height: 16),
+                      FormField<String>(
+                        initialValue: _bloodGroup,
+                        validator: (value) => value == null ? Strings.required : null,
+                        builder: (state) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(Strings.bloodGroup, style: theme.textTheme.labelMedium),
+                            const SizedBox(height: 8),
+                            Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    for (int i = 0; i < AppConstants.positiveBloodGroups.length; i++) ...[
+                                      if (i > 0) const SizedBox(width: 8),
+                                      Expanded(
+                                        child: _BloodGroupFormChip(
+                                          group: AppConstants.positiveBloodGroups[i],
+                                          isSelected: state.value == AppConstants.positiveBloodGroups[i],
+                                          onTap: () {
+                                            HapticFeedback.selectionClick();
+                                            final g = AppConstants.positiveBloodGroups[i];
+                                            _bloodGroup = g;
+                                            state.didChange(g);
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    for (int i = 0; i < AppConstants.negativeBloodGroups.length; i++) ...[
+                                      if (i > 0) const SizedBox(width: 6),
+                                      Expanded(
+                                        child: _BloodGroupFormChip(
+                                          group: AppConstants.negativeBloodGroups[i],
+                                          isSelected: state.value == AppConstants.negativeBloodGroups[i],
+                                          onTap: () {
+                                            HapticFeedback.selectionClick();
+                                            final g = AppConstants.negativeBloodGroups[i];
+                                            _bloodGroup = g;
+                                            state.didChange(g);
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                            if (state.hasError)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(
+                                  state.errorText!,
+                                  style: TextStyle(color: theme.colorScheme.error),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    IconButton(
-                      tooltip: Strings.pickDate,
-                      icon: const Icon(Icons.calendar_month),
-                      onPressed: _pickDate,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _notes,
-                maxLength: AppConstants.maxNotesLength,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: Strings.notes),
-              ),
-              FormField<bool>(
-                initialValue: widget.donor?.consentToShare ?? false,
-                validator: (value) => value == true ? null : Strings.consentRequired,
-                builder: (state) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      value: state.value ?? false,
-                      onChanged: (value) => state.didChange(value ?? false),
-                      title: const Text(Strings.consent),
-                    ),
-                    if (state.hasError)
-                      Text(state.errorText!, style: TextStyle(color: theme.colorScheme.error)),
-                  ],
+              const SizedBox(height: 12),
+
+              // 2. যোগাযোগ ও অবস্থান কার্ড
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.phone_rounded, size: 18, color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'যোগাযোগ ও অবস্থান',
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _phone,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          labelText: Strings.phone,
+                          hintText: '01XXXXXXXXX',
+                          prefixIcon: Icon(Icons.phone_android_rounded),
+                        ),
+                        validator: (v) => PhoneNormalizer.normalize(v) == null ? Strings.invalidPhone : null,
+                      ),
+                      const SizedBox(height: 12),
+                      SuggestField(
+                        label: Strings.district,
+                        initialValue: _district,
+                        maxLength: AppConstants.maxPlaceLength,
+                        optionsBuilder: () => kAreasByDistrict.keys.toList(),
+                        onChanged: (value) => _district = value,
+                        validator: (v) => _requiredText(v, max: AppConstants.maxPlaceLength),
+                      ),
+                      SuggestField(
+                        label: Strings.area,
+                        initialValue: _area,
+                        maxLength: AppConstants.maxPlaceLength,
+                        optionsBuilder: () => kAreasByDistrict[_district.trim()] ?? const [],
+                        onChanged: (value) => _area = value,
+                        validator: (v) => _requiredText(v, max: AppConstants.maxPlaceLength),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+
+              // 3. রক্তদানের তথ্য ও সম্মতি কার্ড
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.history_rounded, size: 18, color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'রক্তদানের তথ্য ও সম্মতি',
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text(Strings.lastDonation),
+                        subtitle: Builder(
+                          builder: (context) {
+                            final parsed = parseIsoDate(_lastDate);
+                            return Text(
+                              parsed == null ? Strings.notSet : formatDateBn(parsed),
+                              style: TextStyle(
+                                color: parsed != null ? kCrimson : null,
+                                fontWeight: parsed != null ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            );
+                          },
+                        ),
+                        onTap: _pickDate,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_lastDate != null)
+                              IconButton(
+                                tooltip: Strings.clear,
+                                icon: const Icon(Icons.clear_rounded),
+                                onPressed: () => setState(() => _lastDate = null),
+                              ),
+                            IconButton(
+                              tooltip: Strings.pickDate,
+                              icon: const Icon(Icons.calendar_month_rounded),
+                              onPressed: _pickDate,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextFormField(
+                        controller: _notes,
+                        maxLength: AppConstants.maxNotesLength,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                          labelText: Strings.notes,
+                          prefixIcon: Icon(Icons.edit_note_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      FormField<bool>(
+                        initialValue: widget.donor?.consentToShare ?? true,
+                        validator: (value) => value == true ? null : Strings.consentRequired,
+                        builder: (state) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              value: state.value ?? true,
+                              onChanged: (value) {
+                                HapticFeedback.selectionClick();
+                                state.didChange(value);
+                              },
+                              title: const Text(
+                                Strings.consent,
+                                style: TextStyle(fontSize: 13),
+                              ),
+                            ),
+                            if (state.hasError)
+                              Text(state.errorText!, style: TextStyle(color: theme.colorScheme.error)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // সংরক্ষণ বোতাম
               FilledButton(
                 onPressed: _saving ? null : _save,
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text(Strings.save),
+                style: FilledButton.styleFrom(
+                  backgroundColor: kCrimson,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text(
+                        Strings.save,
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
               ),
+              const SizedBox(height: 24),
             ],
           ),
         ),

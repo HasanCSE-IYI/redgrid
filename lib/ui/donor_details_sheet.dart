@@ -149,8 +149,9 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
               children: [
                 BloodGroupBadge(
                   bloodGroup: donor.bloodGroup,
-                  size: 52,
+                  size: 54,
                   fontSize: 20,
+                  filled: true,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -158,40 +159,22 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(donor.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                      Text('${donor.area}, ${donor.district}', style: theme.textTheme.bodyMedium),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: milestone.badgeColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: milestone.badgeColor.withValues(alpha: 0.5)),
+                          Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              '${donor.area}, ${donor.district}',
+                              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(milestone.badgeIcon, style: const TextStyle(fontSize: 14)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  milestone.title,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: milestone.badgeColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'মোট: ${toBanglaDigits(donor.totalDonations)} বার',
-                            style: theme.textTheme.bodySmall,
                           ),
                         ],
                       ),
+                      const SizedBox(height: 4),
+                      MilestoneBadge(totalDonations: donor.totalDonations, showCount: true),
                     ],
                   ),
                 ),
@@ -208,6 +191,51 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
             gender: donor.gender,
             lastDonationDate: donor.lastDonationDate,
           ),
+          if (donor.totalDonations > 0) ...[
+            const SizedBox(height: 10),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: theme.brightness == Brightness.dark
+                      ? [Colors.amber.shade900.withValues(alpha: 0.25), const Color(0xFF1E2228)]
+                      : [const Color(0xFFFFF8E1), Colors.white],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.amber.shade700.withValues(alpha: 0.4)
+                      : Colors.amber.shade300,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(milestone.badgeIcon, style: const TextStyle(fontSize: 22)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${milestone.title} • মোট ${toBanglaDigits(donor.totalDonations)} বার রক্তদান',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        Text(
+                          'আনুমানিক ${toBanglaDigits(donor.totalDonations * 3)} ${Strings.livesImpactText}',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: theme.brightness == Brightness.dark ? Colors.amber.shade200 : const Color(0xFFB45309),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           // যোগাযোগ বোতামসমূহ
           Padding(
@@ -280,31 +308,64 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
                     ),
                   );
                 }
-                return ListView.separated(
+                return ListView.builder(
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
                   itemCount: dates.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final date = dates[index];
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: const CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Color(0xFFFFEBEE),
-                        child: Icon(Icons.bloodtype, size: 16, color: kCrimson),
-                      ),
-                      title: Text(
-                        formatIsoDateBn(date),
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(date, style: theme.textTheme.bodySmall),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
-                        tooltip: Strings.delete,
-                        onPressed: () => _deleteDate(date),
-                      ),
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          children: [
+                            Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                color: kCrimson.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: kCrimson.withValues(alpha: 0.4)),
+                              ),
+                              child: const Icon(Icons.water_drop_rounded, size: 14, color: kCrimson),
+                            ),
+                            if (index < dates.length - 1)
+                              Container(
+                                width: 2,
+                                height: 36,
+                                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  formatIsoDateBn(date),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  date,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                              ],
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 19, color: Colors.grey),
+                          tooltip: Strings.delete,
+                          onPressed: () => _deleteDate(date),
+                        ),
+                      ],
                     );
                   },
                 );

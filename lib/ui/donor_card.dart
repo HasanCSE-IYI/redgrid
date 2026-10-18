@@ -7,6 +7,7 @@ import '../core/digits.dart';
 import '../core/strings_bn.dart';
 import '../data/donor.dart';
 import '../data/donor_repository.dart';
+import '../domain/eligibility.dart';
 import '../domain/milestones.dart';
 import '../providers.dart';
 import '../services/contact_service.dart';
@@ -171,8 +172,6 @@ class _DonorCardState extends ConsumerState<DonorCard> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final donor = widget.donor;
@@ -181,17 +180,22 @@ class _DonorCardState extends ConsumerState<DonorCard> {
     final selectedBloodGroup = ref.watch(filterProvider.select((f) => f.bloodGroup));
     final isCompatibleMatch = selectedBloodGroup != null && selectedBloodGroup != donor.bloodGroup;
     final milestone = DonorMilestone.forCount(donor.totalDonations);
+    final eligibility = Eligibility.check(
+      gender: donor.gender,
+      lastDonationDate: donor.lastDonationDate,
+    );
+    final isEligible = eligibility.eligible;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      elevation: 1.5,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: isCompatibleMatch
               ? Colors.amber.shade400
-              : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-          width: isCompatibleMatch ? 1.4 : 1.0,
+              : theme.colorScheme.outlineVariant.withValues(alpha: isDark ? 0.25 : 0.45),
+          width: isCompatibleMatch ? 1.5 : 1.0,
         ),
       ),
       child: InkWell(
@@ -206,53 +210,12 @@ class _DonorCardState extends ConsumerState<DonorCard> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Blood Group Container
-                  Container(
-                    width: 52,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: kCrimson,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kCrimson.withValues(alpha: 0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          donor.bloodGroup,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 17,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        if (isCompatibleMatch) ...[
-                          const SizedBox(height: 2),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.shade300,
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: const Text(
-                              'ম্যাচ',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF5D4037),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                  BloodGroupBadge(
+                    bloodGroup: donor.bloodGroup,
+                    size: 52,
+                    fontSize: 18,
+                    filled: true,
+                    isCompatibleMatch: isCompatibleMatch,
                   ),
                   const SizedBox(width: 12),
 
@@ -363,24 +326,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   EligibilityPill(gender: donor.gender, lastDonationDate: donor.lastDonationDate),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white10 : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: isDark ? Colors.white12 : Colors.grey.shade300,
-                      ),
-                    ),
-                    child: Text(
-                      '🩸 ${toBanglaDigits(donor.totalDonations)} বার (${milestone.title})',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
-                      ),
-                    ),
-                  ),
+                  MilestoneBadge(totalDonations: donor.totalDonations),
                 ],
               ),
 
@@ -436,23 +382,44 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                   ),
                   const SizedBox(width: 8),
 
-                  // Large Primary Emergency Call Button
-                  FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF2E7D32),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      visualDensity: VisualDensity.compact,
-                      elevation: 1,
-                    ),
-                    icon: const Icon(Icons.call_rounded, size: 16),
-                    label: const Text(
-                      Strings.callNow,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                    ),
-                    onPressed: _call,
-                  ),
+                  // Smart Emergency Call Button (Green if ready, Outlined if waiting)
+                  isEligible
+                      ? FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: kEligibleGreen,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            visualDensity: VisualDensity.compact,
+                            elevation: 1,
+                          ),
+                          icon: const Icon(Icons.call_rounded, size: 16),
+                          label: const Text(
+                            Strings.callNow,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: _call,
+                        )
+                      : Tooltip(
+                          message: 'ডোনার বর্তমানে অপেক্ষমান সময়ের মধ্যে আছেন',
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isDark ? Colors.white70 : kWaitSlate,
+                              side: BorderSide(
+                                color: isDark ? Colors.white24 : Colors.grey.shade400,
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            icon: const Icon(Icons.call_outlined, size: 15),
+                            label: const Text(
+                              Strings.callWaiting,
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                            onPressed: _call,
+                          ),
+                        ),
                 ],
               ),
             ],

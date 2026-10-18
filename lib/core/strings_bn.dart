@@ -89,6 +89,15 @@ class Strings {
   static const postCopied = 'আবেদনের লেখা কপি করা হয়েছে';
   static const broadcastHeader = '🚨 #জরুরি_রক্তের_প্রয়োজন 🚨';
   static const broadcastFooter = '(RedGrid - লাইফসেভার অফলাইন ডিরেক্টরি)';
+  static const emergencyBannerTitle = 'জরুরি রক্তের প্রয়োজন?';
+  static const emergencyBannerSub = 'সোশ্যাল মিডিয়ার জন্য দ্রুত পোস্ট তৈরি ও শেয়ার করুন';
+  static const createPostAction = 'পোস্ট তৈরি';
+  static const callWaiting = 'কল (অপেক্ষমান)';
+  static const offlineReady = '১০০% অফলাইন';
+  static const livesSavedEstimate = 'জীবন রক্ষায় ভূমিকা';
+  static const livesImpactText = 'জন মানুষের জীবন বাঁচাতে সহায়তা করেছেন';
+  static const clearFilter = 'ফিল্টার মুছুন';
+  static String donorsFound(Object count) => '$count জন ডোনার পাওয়া গেছে';
 
   // হোম ড্যাশবোর্ড পরিসংখ্যান (Summary Stats)
   static const totalDonors = 'মোট ডোনার';

@@ -6,6 +6,7 @@ import '../core/date_format.dart';
 import '../core/digits.dart';
 import '../core/strings_bn.dart';
 import '../domain/eligibility.dart';
+import '../domain/milestones.dart';
 
 export 'notification_center_sheet.dart' show AppNotificationToast;
 
@@ -17,15 +18,70 @@ class BloodGroupBadge extends StatelessWidget {
     this.size = 48,
     this.fontSize = 18,
     this.borderRadius = 12,
+    this.filled = false,
+    this.isCompatibleMatch = false,
   });
 
   final String bloodGroup;
   final double size;
   final double fontSize;
   final double borderRadius;
+  final bool filled;
+  final bool isCompatibleMatch;
 
   @override
   Widget build(BuildContext context) {
+    if (filled) {
+      return Container(
+        width: size,
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: kCrimson,
+          borderRadius: BorderRadius.circular(borderRadius),
+          boxShadow: [
+            BoxShadow(
+              color: kCrimson.withValues(alpha: 0.28),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              bloodGroup,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: fontSize,
+                letterSpacing: 0.4,
+              ),
+            ),
+            if (isCompatibleMatch) ...[
+              const SizedBox(height: 2),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'ম্যাচ',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF5D4037),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: size,
       height: size,
@@ -43,6 +99,51 @@ class BloodGroupBadge extends StatelessWidget {
           fontSize: fontSize,
           letterSpacing: 0.2,
         ),
+      ),
+    );
+  }
+}
+
+/// ডোনার স্বীকৃতি মাইলস্টোন ব্যাজ
+class MilestoneBadge extends StatelessWidget {
+  const MilestoneBadge({
+    super.key,
+    required this.totalDonations,
+    this.showCount = true,
+  });
+
+  final int totalDonations;
+  final bool showCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final milestone = DonorMilestone.forCount(totalDonations);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+      decoration: BoxDecoration(
+        color: milestone.badgeColor.withValues(alpha: isDark ? 0.22 : 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: milestone.badgeColor.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(milestone.badgeIcon, style: const TextStyle(fontSize: 13)),
+          const SizedBox(width: 4),
+          Text(
+            showCount
+                ? '${milestone.title} • ${toBanglaDigits(totalDonations)} বার'
+                : milestone.title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : milestone.badgeColor,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -74,34 +175,40 @@ class EligibilityPill extends StatelessWidget {
     final icon = check.eligible ? Icons.check_circle_rounded : Icons.access_time_rounded;
 
     final String label;
+    final String tooltip;
     if (check.eligible) {
       label = Strings.readyToDonate;
+      tooltip = 'ডোনার রক্তদানে সম্পূর্ণ প্রস্তুত';
     } else {
       final daysBn = toBanglaDigits(check.daysLeft);
       label = 'আর $daysBn দিন পর যোগ্য';
+      tooltip = 'পরবর্তী সম্ভাব্য তারিখ: ${formatDateBn(check.nextEligibleDate!)}';
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color,
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8.5, vertical: 3.5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

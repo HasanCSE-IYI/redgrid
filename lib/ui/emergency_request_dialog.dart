@@ -41,10 +41,24 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
   void initState() {
     super.initState();
     _selectedGroup = widget.initialBloodGroup ?? 'A+';
+    _hospitalController.addListener(_onTextChanged);
+    _unitsController.addListener(_onTextChanged);
+    _whenController.addListener(_onTextChanged);
+    _reasonController.addListener(_onTextChanged);
+    _phoneController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _hospitalController.removeListener(_onTextChanged);
+    _unitsController.removeListener(_onTextChanged);
+    _whenController.removeListener(_onTextChanged);
+    _reasonController.removeListener(_onTextChanged);
+    _phoneController.removeListener(_onTextChanged);
     _hospitalController.dispose();
     _unitsController.dispose();
     _whenController.dispose();
@@ -181,6 +195,23 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                     ),
                   ],
                 ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  children: [
+                    for (final u in const ['১ ব্যাগ', '২ ব্যাগ', '৩ ব্যাগ', '৪ ব্যাগ'])
+                      ActionChip(
+                        label: Text(u, style: const TextStyle(fontSize: 11)),
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          _unitsController.text = u;
+                        },
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -207,6 +238,23 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                     ),
                   ],
                 ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  children: [
+                    for (final w in const ['জরুরি / আজ', 'আজ সন্ধ্যা', 'আজ রাত', 'আগামীকাল'])
+                      ActionChip(
+                        label: Text(w, style: const TextStyle(fontSize: 11)),
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          _whenController.text = w;
+                        },
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _reasonController,
@@ -216,7 +264,75 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                     prefixIcon: Icon(Icons.notes_outlined),
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  children: [
+                    for (final r in const [
+                      'সিজারিয়ান / প্রসব',
+                      'জরুরি অপারেশন',
+                      'থ্যালাসেমিয়া',
+                      'দুর্ঘটনা / ট্রমা'
+                    ])
+                      ActionChip(
+                        label: Text(r, style: const TextStyle(fontSize: 11)),
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          _reasonController.text = r;
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // লাইভ সোশ্যাল পোস্ট প্রিভিউ বক্স
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.brightness == Brightness.dark
+                        ? const Color(0xFF1E2228)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.brightness == Brightness.dark
+                          ? Colors.white12
+                          : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.visibility_outlined, size: 15, color: theme.colorScheme.primary),
+                          const SizedBox(width: 6),
+                          Text(
+                            'সোশ্যাল মিডিয়া পোস্টের প্রিভিউ (Facebook / WhatsApp):',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        _buildBroadcastText(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: theme.brightness == Brightness.dark ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+
                 Row(
                   children: [
                     Expanded(
