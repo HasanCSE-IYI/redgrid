@@ -5,7 +5,7 @@ import 'package:redgrid/domain/app_notification.dart';
 void main() {
   group('AppNotification', () {
     test('fromDonorEligibility returns null when donor has no lastDonationDate', () {
-      final donor = Donor(
+      const donor = Donor(
         id: 1,
         name: 'রাকিব হাসান',
         bloodGroup: 'A+',
@@ -13,6 +13,9 @@ void main() {
         phone: '01712345678',
         district: 'ঢাকা',
         area: 'ধানমন্ডি',
+        consentToShare: true,
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
       );
       final alert = AppNotification.fromDonorEligibility(donor);
       expect(alert, isNull);
@@ -20,8 +23,8 @@ void main() {
 
     test('fromDonorEligibility returns alert when cooldown is completed', () {
       final today = DateTime.utc(2026, 10, 18);
-      // Male donor with last donation 95 days ago (cooldown 90 days)
-      final donor = Donor(
+      // Male donor with last donation 100 days ago (cooldown 90 days)
+      const donor = Donor(
         id: 2,
         name: 'তানভীর আহমেদ',
         bloodGroup: 'B+',
@@ -29,7 +32,10 @@ void main() {
         phone: '01812345678',
         district: 'চট্টগ্রাম',
         area: 'জিইসি',
-        lastDonationDate: '2026-07-10', // 100 days ago
+        consentToShare: true,
+        lastDonationDate: '2026-07-10',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-07-10T00:00:00Z',
       );
       final alert = AppNotification.fromDonorEligibility(donor, today: today);
       expect(alert, isNotNull);
@@ -43,7 +49,7 @@ void main() {
     test('fromDonorEligibility returns null when cooldown is not yet completed', () {
       final today = DateTime.utc(2026, 10, 18);
       // Male donor donated 30 days ago (needs 90 days)
-      final donor = Donor(
+      const donor = Donor(
         id: 3,
         name: 'সাকিব আল হাসান',
         bloodGroup: 'O+',
@@ -51,7 +57,10 @@ void main() {
         phone: '01912345678',
         district: 'ঢাকা',
         area: 'মিরপুর',
+        consentToShare: true,
         lastDonationDate: '2026-09-18',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-09-18T00:00:00Z',
       );
       final alert = AppNotification.fromDonorEligibility(donor, today: today);
       expect(alert, isNull);
