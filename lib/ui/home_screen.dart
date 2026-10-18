@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,7 +32,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _debounce;
   late final TextEditingController _searchController;
-  bool _isFabExtended = true;
   bool _isCompactView = false;
 
   void _openAddDonor() {
@@ -146,6 +144,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: Strings.addDonor,
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+            onPressed: _openAddDonor,
+          ),
           // জরুরি রক্তের আবেদন বোতাম
           IconButton(
             tooltip: Strings.emergencyBannerTitle,
@@ -190,39 +193,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: 'fab_add_donor',
-        isExtended: _isFabExtended,
-        tooltip: Strings.addDonor,
-        backgroundColor: kCrimson,
-        foregroundColor: Colors.white,
-        elevation: 3,
-        icon: const Icon(Icons.person_add_rounded),
-        label: const Text(
-          Strings.addDonor,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
-        ),
-        onPressed: _openAddDonor,
-      ),
       body: SafeArea(
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification is UserScrollNotification) {
-              if (notification.direction == ScrollDirection.reverse) {
-                if (_isFabExtended) setState(() => _isFabExtended = false);
-              } else if (notification.direction == ScrollDirection.forward) {
-                if (!_isFabExtended) setState(() => _isFabExtended = true);
-              }
-            }
-            return false;
-          },
-          child: RefreshIndicator(
+        child: RefreshIndicator(
             onRefresh: _doSync,
             child: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -249,7 +227,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 : null,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         // রক্তের গ্রুপ নির্বাচক
                         _BloodGroupSelector(
                           selectedGroup: filter.bloodGroup,
@@ -259,7 +237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           },
                         ),
                         if (filter.bloodGroup != null) ...[
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           InkWell(
                             onTap: () {
                               HapticFeedback.selectionClick();
@@ -302,13 +280,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 10),
                         Row(
                           children: [
                             Expanded(
                               child: _FilterDropdown(
-                                label: Strings.district,
-                                allLabel: Strings.allDistricts,
+                                hint: Strings.allDistricts,
                                 value: filter.district,
                                 options: kAreasByDistrict.keys.toList(),
                                 onChanged: (val) {
@@ -317,11 +294,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 },
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: _FilterDropdown(
-                                label: Strings.area,
-                                allLabel: Strings.allAreas,
+                                hint: Strings.allAreas,
                                 value: filter.area,
                                 options: areaOptions,
                                 onChanged: filter.district == null
@@ -334,7 +310,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 10),
                         InkWell(
                           onTap: () {
                             HapticFeedback.selectionClick();
@@ -428,7 +404,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : [
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
                           child: Row(
                             children: [
                               Text(
@@ -513,9 +489,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           isCompact: _isCompactView,
                         ),
                       ),
-                      // নিচের কার্ড ঢাকা পড়া ঠেকাতে অতিরিক্ত ফাঁকা জায়গা
+                      // নিচের কার্ডের জন্য অতিরিক্ত ফাঁকা জায়গা
                       const SliverToBoxAdapter(
-                        child: SizedBox(height: 80),
+                        child: SizedBox(height: 24),
                       ),
                     ],
             ),
@@ -523,9 +499,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     ),
-  ),
-);
-  }
+  );
+}
 
   void _showSyncDialog(BuildContext context) {
     SyncSettingsDialog.show(
@@ -540,31 +515,90 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 class _FilterDropdown extends StatelessWidget {
   const _FilterDropdown({
-    required this.label,
-    required this.allLabel,
+    required this.hint,
     required this.value,
     required this.options,
     required this.onChanged,
   });
 
-  final String label;
-  final String allLabel;
+  final String hint;
   final String? value;
   final List<String> options;
   final ValueChanged<String?>? onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return InputDecorator(
-      decoration: InputDecoration(labelText: label, contentPadding: const EdgeInsets.symmetric(horizontal: 12)),
+    final theme = Theme.of(context);
+    final isSelected = value != null && options.contains(value);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? (isDark ? const Color(0xFF332024) : const Color(0xFFFDE8E8))
+            : (isDark ? const Color(0xFF1E232A) : const Color(0xFFF3F4F6)),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isSelected
+              ? kCrimson.withValues(alpha: 0.5)
+              : (isDark ? const Color(0xFF2E3846) : const Color(0xFFE5E7EB)),
+          width: 1,
+        ),
+      ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           isExpanded: true,
-          value: options.contains(value) ? value : null,
+          value: isSelected ? value : null,
+          hint: Text(
+            hint,
+            style: TextStyle(
+              fontSize: 13,
+              color: onChanged == null
+                  ? theme.disabledColor
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 20,
+            color: isSelected ? kCrimson : theme.colorScheme.onSurfaceVariant,
+          ),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            color: isSelected
+                ? (isDark ? const Color(0xFFFF8A80) : kCrimson)
+                : theme.colorScheme.onSurface,
+          ),
           onChanged: onChanged,
           items: [
-            DropdownMenuItem<String?>(value: null, child: Text(allLabel)),
-            for (final option in options) DropdownMenuItem<String?>(value: option, child: Text(option)),
+            DropdownMenuItem<String?>(
+              value: null,
+              child: Text(
+                hint,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            for (final option in options)
+              DropdownMenuItem<String?>(
+                value: option,
+                child: Text(
+                  option,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: option == value ? FontWeight.w600 : FontWeight.normal,
+                    color: option == value
+                        ? (isDark ? const Color(0xFFFF8A80) : kCrimson)
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
