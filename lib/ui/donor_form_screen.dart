@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../app.dart';
 import '../core/areas.dart';
 import '../core/constants.dart';
 import '../core/date_format.dart';
@@ -73,10 +75,14 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
       firstDate: first,
       lastDate: now,
     );
-    if (picked != null) setState(() => _lastDate = isoDate(picked));
+    if (picked != null) {
+      HapticFeedback.lightImpact();
+      setState(() => _lastDate = isoDate(picked));
+    }
   }
 
   Future<void> _save() async {
+    HapticFeedback.mediumImpact();
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final existing = widget.donor;
@@ -148,7 +154,10 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                   ButtonSegment(value: AppConstants.genderFemale, label: Text(Strings.female)),
                 ],
                 selected: {_gender},
-                onSelectionChanged: (selection) => setState(() => _gender = selection.first),
+                onSelectionChanged: (selection) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _gender = selection.first);
+                },
               ),
               const SizedBox(height: 16),
               FormField<String>(
@@ -159,19 +168,47 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                   children: [
                     Text(Strings.bloodGroup, style: theme.textTheme.titleSmall),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
+                    Column(
                       children: [
-                        for (final group in AppConstants.bloodGroups)
-                          ChoiceChip(
-                            label: Text(group),
-                            selected: state.value == group,
-                            onSelected: (_) {
-                              _bloodGroup = group;
-                              state.didChange(group);
-                            },
-                          ),
+                        Row(
+                          children: [
+                            for (int i = 0; i < const ['A+', 'B+', 'O+', 'AB+'].length; i++) ...[
+                              if (i > 0) const SizedBox(width: 8),
+                              Expanded(
+                                child: _BloodGroupFormChip(
+                                  group: const ['A+', 'B+', 'O+', 'AB+'][i],
+                                  isSelected: state.value == const ['A+', 'B+', 'O+', 'AB+'][i],
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    final g = const ['A+', 'B+', 'O+', 'AB+'][i];
+                                    _bloodGroup = g;
+                                    state.didChange(g);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            for (int i = 0; i < const ['A-', 'B-', 'O-', 'AB-', 'Oh'].length; i++) ...[
+                              if (i > 0) const SizedBox(width: 6),
+                              Expanded(
+                                child: _BloodGroupFormChip(
+                                  group: const ['A-', 'B-', 'O-', 'AB-', 'Oh'][i],
+                                  isSelected: state.value == const ['A-', 'B-', 'O-', 'AB-', 'Oh'][i],
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    final g = const ['A-', 'B-', 'O-', 'AB-', 'Oh'][i];
+                                    _bloodGroup = g;
+                                    state.didChange(g);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                     if (state.hasError)
@@ -271,6 +308,69 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BloodGroupFormChip extends StatelessWidget {
+  const _BloodGroupFormChip({
+    required this.group,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String group;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? kCrimson
+                : (isDark
+                    ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
+                    : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected
+                  ? kCrimson
+                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+              width: isSelected ? 1.5 : 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: kCrimson.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            group,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+            ),
           ),
         ),
       ),

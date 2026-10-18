@@ -49,6 +49,12 @@ def patch_manifest() -> bool:
             changed = True
             print("manifest patched with INTERNET and ACCESS_NETWORK_STATE permissions")
 
+    # App launcher display name: change "redgrid" to "RedGrid"
+    if 'android:label="redgrid"' in text:
+        text = text.replace('android:label="redgrid"', 'android:label="RedGrid"')
+        changed = True
+        print("manifest patched with android:label=RedGrid")
+
     if 'android:allowBackup="true"' in text:
         text = text.replace('android:allowBackup="true"', 'android:allowBackup="false"')
         changed = True
@@ -195,8 +201,28 @@ def patch_launcher_icons() -> None:
         pass
 
 
+def patch_app_label() -> None:
+    if not ANDROID_DIR.exists():
+        return
+    for manifest_path in ANDROID_DIR.glob("**/AndroidManifest.xml"):
+        if manifest_path.exists():
+            content = manifest_path.read_text(encoding="utf-8")
+            if 'android:label="redgrid"' in content:
+                content = content.replace('android:label="redgrid"', 'android:label="RedGrid"')
+                manifest_path.write_text(content, encoding="utf-8")
+                print(f"Patched {manifest_path} android:label to RedGrid")
+    for strings_path in ANDROID_DIR.glob("**/res/values*/strings.xml"):
+        if strings_path.exists():
+            content = strings_path.read_text(encoding="utf-8")
+            if "redgrid" in content:
+                content = re.sub(r'(<string\s+name="app_name"[^>]*>)redgrid(</string>)', r'\1RedGrid\2', content)
+                strings_path.write_text(content, encoding="utf-8")
+                print(f"Patched {strings_path} app_name to RedGrid")
+
+
 def main() -> int:
     manifest_ok = patch_manifest()
+    patch_app_label()
     patch_local_properties()
     patch_app_gradle()
     patch_pub_cache()

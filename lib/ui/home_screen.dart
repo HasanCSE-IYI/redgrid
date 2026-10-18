@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,6 +33,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _debounce;
   late final TextEditingController _searchController;
   bool _hasSyncUrl = false;
+  bool _isFabVisible = true;
+
+  void _openAddDonor() {
+    HapticFeedback.lightImpact();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const DonorFormScreen()),
+    );
+  }
 
   @override
   void initState() {
@@ -156,6 +165,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onPressed: () => _showSyncDialog(context),
                 ),
           IconButton(
+            tooltip: Strings.addDonor,
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+            onPressed: _openAddDonor,
+          ),
+          IconButton(
             tooltip: Strings.emergencyRequest,
             icon: const Icon(Icons.emergency_share, color: kCrimson),
             onPressed: () => EmergencyRequestDialog.show(
@@ -174,26 +188,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => const DonorFormScreen()),
+      floatingActionButton: AnimatedScale(
+        scale: _isFabVisible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        child: FloatingActionButton.small(
+          heroTag: 'fab_add_donor',
+          tooltip: Strings.addDonor,
+          backgroundColor: kCrimson,
+          foregroundColor: Colors.white,
+          onPressed: _openAddDonor,
+          child: const Icon(Icons.person_add_rounded),
         ),
-        icon: const Icon(Icons.person_add),
-        label: const Text(Strings.addDonor),
       ),
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _doSync,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // সারাংশ পরিসংখ্যান ব্যানার
+        child: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            if (notification.direction == ScrollDirection.reverse) {
+              if (_isFabVisible) setState(() => _isFabVisible = false);
+            } else if (notification.direction == ScrollDirection.forward) {
+              if (!_isFabVisible) setState(() => _isFabVisible = true);
+            }
+            return false;
+          },
+          child: RefreshIndicator(
+            onRefresh: _doSync,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // সারাংশ পরিসংখ্যান ব্যানার
                     statsAsync.when(
                       skipLoadingOnReload: true,
                       data: (stats) => Padding(
@@ -253,24 +281,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       loading: () => const SizedBox.shrink(),
                       error: (_, __) => const SizedBox.shrink(),
                     ),
-                    // জরুরি আবেদন দ্রুত তৈরি বোতাম
+                    // প্রধান কার্যক্রম: ডোনার যোগ ও জরুরি আবেদন
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: OutlinedButton.icon(
-                        onPressed: () => EmergencyRequestDialog.show(
-                          context,
-                          bloodGroup: filter.bloodGroup,
-                        ),
-                        icon: const Icon(Icons.emergency, color: kCrimson, size: 20),
-                        label: const Text(
-                          'জরুরি রক্তের আবেদন তৈরি ও শেয়ার',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: kCrimson, width: 1.2),
-                          foregroundColor: kCrimson,
-                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                        ),
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: _openAddDonor,
+                              icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                              label: const Text(
+                                Strings.addDonor,
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: kCrimson,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                elevation: 1,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                EmergencyRequestDialog.show(
+                                  context,
+                                  bloodGroup: filter.bloodGroup,
+                                );
+                              },
+                              icon: const Icon(Icons.emergency_share, color: kCrimson, size: 18),
+                              label: const Text(
+                                'জরুরি আবেদন',
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: kCrimson, width: 1.2),
+                                foregroundColor: kCrimson,
+                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Row(
@@ -388,14 +444,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ],
                     ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text(Strings.eligibleOnly),
-                      value: filter.eligibleOnly,
-                      onChanged: (val) {
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () {
                         HapticFeedback.selectionClick();
-                        notifier.setEligibleOnly(val);
+                        notifier.setEligibleOnly(!filter.eligibleOnly);
                       },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: filter.eligibleOnly
+                              ? kEligibleGreen.withValues(alpha: 0.12)
+                              : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: filter.eligibleOnly
+                                ? kEligibleGreen.withValues(alpha: 0.5)
+                                : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              filter.eligibleOnly ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                              size: 17,
+                              color: filter.eligibleOnly ? kEligibleGreen : theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                Strings.eligibleOnly,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: filter.eligibleOnly ? FontWeight.w600 : FontWeight.normal,
+                                  color: filter.eligibleOnly ? kEligibleGreen : theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            if (filter.eligibleOnly)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: kEligibleGreen,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'সক্রিয়',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -426,6 +527,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         hasScrollBody: false,
                         child: _SmartEmptyState(
                           filter: filter,
+                          onAddDonor: _openAddDonor,
                           onFindCompatible: () {
                             notifier.setIncludeCompatible(true);
                           },
@@ -446,6 +548,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ]
                   : [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: Row(
+                            children: [
+                              Text(
+                                '${toBanglaDigits(list.length)} জন ডোনার পাওয়া গেছে',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (filter.bloodGroup != null ||
+                                  filter.district != null ||
+                                  filter.area != null ||
+                                  filter.eligibleOnly ||
+                                  filter.query.isNotEmpty)
+                                InkWell(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    _searchController.clear();
+                                    notifier.reset();
+                                  },
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    child: Text(
+                                      'ফিল্টার মুছুন',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: kCrimson,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
                       SliverList.builder(
                         itemCount: list.length,
                         itemBuilder: (context, index) => DonorCard(
@@ -453,8 +596,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           donor: list[index],
                         ),
                       ),
-                      // নিচের বোতামের নিচে কার্ড ঢাকা পড়া ঠেকাতে ফাঁকা জায়গা।
-                      const SliverToBoxAdapter(child: SizedBox(height: 88)),
+                      // নিচের কার্ড ঢাকা পড়া ঠেকাতে অতিরিক্ত ফাঁকা জায়গা।
+                      const SliverToBoxAdapter(child: SizedBox(height: 100)),
                     ],
             ),
           ],
@@ -717,6 +860,7 @@ class _BloodGroupButton extends StatelessWidget {
 class _SmartEmptyState extends StatelessWidget {
   const _SmartEmptyState({
     required this.filter,
+    required this.onAddDonor,
     required this.onFindCompatible,
     required this.onResetEligible,
     required this.onResetFilters,
@@ -724,6 +868,7 @@ class _SmartEmptyState extends StatelessWidget {
   });
 
   final DonorFilter filter;
+  final VoidCallback onAddDonor;
   final VoidCallback onFindCompatible;
   final VoidCallback onResetEligible;
   final VoidCallback onResetFilters;
@@ -796,6 +941,21 @@ class _SmartEmptyState extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
+              if (!hasActiveFilter) ...[
+                FilledButton.icon(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    onAddDonor();
+                  },
+                  icon: const Icon(Icons.person_add_rounded),
+                  label: const Text(Strings.addDonor),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: kCrimson,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               if (canOfferCompatible) ...[
                 FilledButton.icon(
                   onPressed: () {
