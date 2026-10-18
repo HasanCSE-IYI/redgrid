@@ -6,10 +6,8 @@ import '../core/date_format.dart';
 import '../core/digits.dart';
 import '../core/strings_bn.dart';
 import '../data/donor.dart';
-import '../data/donor_repository.dart';
 import '../domain/milestones.dart';
 import '../providers.dart';
-import '../services/contact_service.dart';
 import 'blood_widgets.dart';
 
 /// ডোনার প্রোফাইল, সরাসরি যোগাযোগ এবং রক্তদানের ইতিহাস টাইমলাইন।
