@@ -61,6 +61,13 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
     '২ দিন পর',
   ];
 
+  static const _reasonPresets = [
+    'সিজারিয়ান',
+    'জরুরি অপারেশন',
+    'থ্যালাসেমিয়া',
+    'দুর্ঘটনা',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -158,7 +165,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                 ),
                 Row(
                   children: [
-                    const Icon(Icons.emergency_share_rounded, color: kCrimson, size: 24),
+                    const Icon(Icons.emergency_rounded, color: kCrimson, size: 24),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -186,66 +193,45 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                 ),
                 const SizedBox(height: 8),
 
-                // রক্তের গ্রুপ নির্বাচক (অনুভূমিক স্ক্রোল পিলস)
-                SizedBox(
-                  height: 38,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: AppConstants.bloodGroups.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 6),
-                    itemBuilder: (context, index) {
-                      final group = AppConstants.bloodGroups[index];
-                      final isSelected = _selectedGroup == group;
-                      return Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _selectedGroup = group);
-                          },
-                          borderRadius: BorderRadius.circular(19),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeInOut,
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? kCrimson
-                                  : (isDark ? const Color(0xFF1E232A) : const Color(0xFFF3F4F6)),
-                              borderRadius: BorderRadius.circular(19),
-                              border: Border.all(
-                                color: isSelected
-                                    ? kCrimson
-                                    : (isDark ? const Color(0xFF2E3846) : const Color(0xFFE5E7EB)),
-                                width: isSelected ? 1.5 : 1,
-                              ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: kCrimson.withValues(alpha: 0.35),
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Text(
-                              group,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                color: isSelected
-                                    ? Colors.white
-                                    : (isDark ? Colors.white70 : const Color(0xFF374151)),
-                              ),
+                // রক্তের গ্রুপ নির্বাচক (২টি সুষম রো: পজিটিভ ও নেগেটিভ+বোম্বে)
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        for (int i = 0; i < AppConstants.positiveBloodGroups.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          Expanded(
+                            child: _BloodGroupChip(
+                              group: AppConstants.positiveBloodGroups[i],
+                              isSelected: _selectedGroup == AppConstants.positiveBloodGroups[i],
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() => _selectedGroup = AppConstants.positiveBloodGroups[i]);
+                              },
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        for (int i = 0; i < AppConstants.negativeBloodGroups.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 6),
+                          Expanded(
+                            child: _BloodGroupChip(
+                              group: AppConstants.negativeBloodGroups[i],
+                              isSelected: _selectedGroup == AppConstants.negativeBloodGroups[i],
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() => _selectedGroup = AppConstants.negativeBloodGroups[i]);
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 14),
 
@@ -364,12 +350,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    for (final r in const [
-                      'সিজারিয়ান / প্রসব',
-                      'জরুরি অপারেশন',
-                      'থ্যালাসেমিয়া',
-                      'দুর্ঘটনা / ট্রমা',
-                    ])
+                    for (final r in _reasonPresets)
                       ActionChip(
                         label: Text(r, style: const TextStyle(fontSize: 11)),
                         padding: EdgeInsets.zero,
@@ -410,7 +391,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.visibility_outlined, size: 16, color: kCrimson),
+                          const Icon(Icons.preview_rounded, size: 16, color: kCrimson),
                           const SizedBox(width: 6),
                           const Text(
                             Strings.socialPreviewTitle,
@@ -421,25 +402,22 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                             ),
                           ),
                           const Spacer(),
-                          InkWell(
-                            onTap: _copy,
-                            borderRadius: BorderRadius.circular(4),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.copy_rounded, size: 13, color: theme.colorScheme.primary),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'কপি',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                  ),
-                                ],
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              'Facebook • WhatsApp',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.primary,
                               ),
                             ),
                           ),
@@ -526,6 +504,69 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BloodGroupChip extends StatelessWidget {
+  const _BloodGroupChip({
+    required this.group,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String group;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? kCrimson
+                : (isDark
+                    ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
+                    : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected
+                  ? kCrimson
+                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+              width: isSelected ? 1.5 : 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: kCrimson.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            group,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              color: isSelected ? Colors.white : theme.colorScheme.onSurface,
             ),
           ),
         ),

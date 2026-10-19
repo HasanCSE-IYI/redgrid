@@ -104,7 +104,7 @@ class Strings {
   static const sectionPersonalInfo = 'ব্যক্তিগত তথ্য';
   static const sectionContactLocation = 'যোগাযোগ ও অবস্থান';
   static const sectionDonationConsent = 'রক্তদানের তথ্য ও সম্মতি';
-  static const socialPreviewTitle = 'সোশ্যাল মিডিয়া পোস্টের প্রিভিউ (Facebook / WhatsApp):';
+  static const socialPreviewTitle = 'সোশ্যাল পোস্ট প্রিভিউ';
   static const matchBadge = 'ম্যাচ';
   static const donorReadyTooltip = 'ডোনার রক্তদানে সম্পূর্ণ প্রস্তুত';
   static const nextEligiblePrefix = 'পরবর্তী সম্ভাব্য তারিখ:';
