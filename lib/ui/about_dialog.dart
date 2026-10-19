@@ -4,8 +4,9 @@ import '../app.dart';
 import '../core/strings_bn.dart';
 import '../services/contact_service.dart';
 import 'blood_widgets.dart';
+import 'brand_icons.dart';
 
-/// কাস্টম 'সম্পর্কে' ডায়ালগ (লাইসেন্স ছাড়া, ডেভেলপার ও সাদাকায়ে জারিয়া সাপোর্ট কার্ডসহ)।
+/// কাস্টম 'সম্পর্কে' ডায়ালগ (লাইসেন্স ছাড়া, ডেভেলপার ও প্রজেক্ট সাপোর্ট কার্ডসহ)।
 class AboutAppDialog extends StatelessWidget {
   const AboutAppDialog({super.key});
 
@@ -256,34 +257,34 @@ class AboutAppDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
 
-                    // Badges (WhatsApp, bKash, Nagad)
+                    // Badges (WhatsApp, bKash, Nagad, CellFin) with authentic brand logos
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       alignment: WrapAlignment.center,
                       children: [
-                        _buildBadge(
-                          icon: Icons.chat_rounded,
+                        _buildBrandBadge(
+                          icon: BrandIcon.whatsapp(size: 14),
                           label: 'WhatsApp',
-                          color: const Color(0xFF25D366),
+                          color: BrandIcon.whatsappGreen,
                           isDark: isDark,
                         ),
-                        _buildBadge(
-                          icon: Icons.account_balance_wallet_rounded,
+                        _buildBrandBadge(
+                          icon: BrandIcon.bkash(size: 14),
                           label: 'বিকাশ (bKash)',
-                          color: const Color(0xFFE2136E),
+                          color: BrandIcon.bkashPink,
                           isDark: isDark,
                         ),
-                        _buildBadge(
-                          icon: Icons.monetization_on_rounded,
+                        _buildBrandBadge(
+                          icon: BrandIcon.nagad(size: 14),
                           label: 'নগদ (Nagad)',
-                          color: const Color(0xFFF7941D),
+                          color: BrandIcon.nagadOrange,
                           isDark: isDark,
                         ),
-                        _buildBadge(
-                          icon: Icons.account_balance_rounded,
+                        _buildBrandBadge(
+                          icon: BrandIcon.cellfin(size: 14),
                           label: 'সেলফিন (CellFin)',
-                          color: const Color(0xFF0072BC),
+                          color: BrandIcon.cellfinBlue,
                           isDark: isDark,
                         ),
                       ],
@@ -314,12 +315,12 @@ class AboutAppDialog extends StatelessWidget {
                         Expanded(
                           child: FilledButton.icon(
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF25D366),
+                              backgroundColor: BrandIcon.whatsappGreen,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
-                            icon: const Icon(Icons.chat_bubble_rounded, size: 15),
+                            icon: BrandIcon.whatsapp(size: 16),
                             label: const Text(
                               'WhatsApp',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
@@ -370,8 +371,8 @@ class AboutAppDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildBadge({
-    required IconData icon,
+  Widget _buildBrandBadge({
+    required Widget icon,
     required String label,
     required Color color,
     required bool isDark,
@@ -388,8 +389,8 @@ class AboutAppDialog extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
+          icon,
+          const SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(

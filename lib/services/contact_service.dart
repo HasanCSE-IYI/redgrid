@@ -83,6 +83,23 @@ class ContactService {
     }
   }
 
+  /// WhatsApp-এ সরাসরি ব্রডকাস্ট মেসেজ বা পোস্ট শেয়ার করা
+  static Future<bool> shareToWhatsApp(String message) async {
+    final encoded = Uri.encodeComponent(message);
+    final uri = Uri.parse('https://api.whatsapp.com/send?text=$encoded');
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await Clipboard.setData(ClipboardData(text: message));
+        return false;
+      }
+      return true;
+    } catch (_) {
+      await Clipboard.setData(ClipboardData(text: message));
+      return false;
+    }
+  }
+
   /// সরাসরি মেসেজ (SMS) অ্যাপ চালু করা। ব্যর্থ হলে মেসেজ ক্লিপবোর্ডে কপি করে false রিটার্ন করে।
   static Future<bool> openSms({
     required String phone,

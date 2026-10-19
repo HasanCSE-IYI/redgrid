@@ -5,10 +5,12 @@ import 'package:share_plus/share_plus.dart';
 
 import '../app.dart';
 import '../core/constants.dart';
+import '../core/phone_normalizer.dart';
 import '../core/strings_bn.dart';
 import '../providers.dart';
 import '../services/contact_service.dart';
 import 'blood_widgets.dart';
+import 'brand_icons.dart';
 
 /// জরুরি রক্তের আবেদনের জন্য পোস্ট প্রস্তুতকরণ ও সামঞ্জস্যপূর্ণ ডোনার খোঁজার ডায়ালগ।
 class EmergencyRequestDialog extends ConsumerStatefulWidget {
@@ -74,7 +76,28 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
     _selectedGroup = widget.initialBloodGroup ?? 'A+';
     _hospitalController.addListener(_onTextChanged);
     _reasonController.addListener(_onTextChanged);
-    _phoneController.addListener(_onTextChanged);
+    _phoneController.addListener(_onPhoneChanged);
+  }
+
+  void _onPhoneChanged() {
+    final text = _phoneController.text;
+    if (text.startsWith('+880')) {
+      _phoneController.value = TextEditingValue(
+        text: text.substring(3),
+        selection: TextSelection.collapsed(offset: text.length - 3),
+      );
+    } else if (text.startsWith('+88')) {
+      _phoneController.value = TextEditingValue(
+        text: text.substring(3),
+        selection: TextSelection.collapsed(offset: text.length - 3),
+      );
+    } else if (text.startsWith('8801')) {
+      _phoneController.value = TextEditingValue(
+        text: text.substring(2),
+        selection: TextSelection.collapsed(offset: text.length - 2),
+      );
+    }
+    _onTextChanged();
   }
 
   void _onTextChanged() {
@@ -85,7 +108,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
   void dispose() {
     _hospitalController.removeListener(_onTextChanged);
     _reasonController.removeListener(_onTextChanged);
-    _phoneController.removeListener(_onTextChanged);
+    _phoneController.removeListener(_onPhoneChanged);
     _hospitalController.dispose();
     _reasonController.dispose();
     _phoneController.dispose();
@@ -100,12 +123,51 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
       when: _when,
       reason: _reasonController.text,
       contactPhone: _phoneController.text.trim().isEmpty
-          ? '(নম্বর দিন)'
+          ? '(মোবাইল নম্বর দিন)'
           : _phoneController.text.trim(),
     );
   }
 
+  bool _validateInputs() {
+    if (_hospitalController.text.trim().isEmpty) {
+      AppNotificationToast.show(
+        context,
+        message: 'দয়া করে রক্তদানের স্থান বা হাসপাতাল উল্লেখ করুন',
+        icon: Icons.local_hospital_outlined,
+        color: kCrimson,
+      );
+      return false;
+    }
+    final norm = PhoneNormalizer.normalize(_phoneController.text.trim());
+    if (norm == null) {
+      AppNotificationToast.show(
+        context,
+        message: 'যোগাযোগের জন্য সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন',
+        icon: Icons.phone_android_rounded,
+        color: kCrimson,
+      );
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _shareWhatsApp() async {
+    HapticFeedback.lightImpact();
+    if (!_validateInputs()) return;
+    final text = _buildBroadcastText();
+    final ok = await ContactService.shareToWhatsApp(text);
+    if (!ok && mounted) {
+      AppNotificationToast.show(
+        context,
+        message: 'WhatsApp চালু করা যায়নি, পোস্টটি কপি করা হয়েছে।',
+        icon: Icons.copy_rounded,
+      );
+    }
+  }
+
   Future<void> _share() async {
+    HapticFeedback.lightImpact();
+    if (!_validateInputs()) return;
     final text = _buildBroadcastText();
     await SharePlus.instance.share(
       ShareParams(
@@ -116,6 +178,8 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
   }
 
   Future<void> _copy() async {
+    HapticFeedback.lightImpact();
+    if (!_validateInputs()) return;
     final text = _buildBroadcastText();
     await ContactService.copyToClipboard(text);
     if (mounted) {
@@ -239,11 +303,55 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                 TextField(
                   controller: _hospitalController,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: Strings.patientHospital,
                     hintText: 'হাসপাতালের নাম ও এলাকা লিখুন',
-                    prefixIcon: Icon(Icons.local_hospital_outlined),
+                    prefixIcon: const Icon(Icons.local_hospital_outlined),
+                    suffixIcon: _hospitalController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear_rounded, size: 18),
+                            onPressed: () {
+                              _hospitalController.clear();
+                              setState(() {});
+                            },
+                          )
+                        : null,
                   ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final h in const [
+                      'ঢাকা মেডিকেল',
+                      'বিএসএমএমইউ (পিজি)',
+                      'কুর্মিটোলা হাসপাতাল',
+                      'চট্টগ্রাম মেডিকেল',
+                      'সদর হাসপাতাল',
+                    ])
+                      ActionChip(
+                        label: Text(h, style: const TextStyle(fontSize: 10.5)),
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                        backgroundColor: _hospitalController.text.contains(h)
+                            ? kCrimson.withValues(alpha: 0.12)
+                            : null,
+                        side: _hospitalController.text.contains(h)
+                            ? BorderSide(color: kCrimson.withValues(alpha: 0.4))
+                            : null,
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          if (_hospitalController.text == h) {
+                            _hospitalController.clear();
+                          } else {
+                            _hospitalController.text = h;
+                          }
+                          setState(() {});
+                        },
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
 
@@ -403,22 +511,32 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                           ),
                           const Spacer(),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                 color: theme.colorScheme.primary.withValues(alpha: 0.2),
                                 width: 0.8,
                               ),
                             ),
-                            child: Text(
-                              'Facebook • WhatsApp',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                BrandIcon.facebook(size: 13),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'Facebook',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(width: 6),
+                                BrandIcon.whatsapp(size: 13),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'WhatsApp',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -437,50 +555,68 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                 ),
                 const SizedBox(height: 16),
 
-                // একশন বাটনসমূহ (পোস্ট কপি ও শেয়ার)
-                SizedBox(
-                  height: 44,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.tonalIcon(
-                          onPressed: _copy,
-                          style: FilledButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                          ),
-                          icon: const Icon(Icons.copy_rounded, size: 17),
-                          label: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              Strings.copyPost,
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
+                // একশন বাটনসমূহ (WhatsApp, সিস্টেম শেয়ার, কপি)
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: FilledButton.icon(
+                        onPressed: _shareWhatsApp,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: BrandIcon.whatsappGreen,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                        ),
+                        icon: BrandIcon.whatsapp(size: 17),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'WhatsApp',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _share,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF25D366),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                          ),
-                          icon: const Icon(Icons.share_rounded, size: 17),
-                          label: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              Strings.sharePost,
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: OutlinedButton.icon(
+                        onPressed: _share,
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                        ),
+                        icon: const Icon(Icons.share_rounded, size: 16),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'শেয়ার',
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 3,
+                      child: FilledButton.tonalIcon(
+                        onPressed: _copy,
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+                        ),
+                        icon: const Icon(Icons.copy_rounded, size: 16),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'কপি',
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
 

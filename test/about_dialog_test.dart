@@ -8,10 +8,10 @@ void main() {
       expect(Strings.developedBy, 'Developed by Bhuiyan Ghazi');
     });
 
-    test('contains correct phone number and Sadaqah Jariyah support', () {
-      expect(Strings.devPhone, '+8801727328200');
-      expect(Strings.sadaqahSupportTitle, 'সাদাকায়ে জারিয়া হিসেবে সাপোর্ট');
-      expect(Strings.sadaqahSupportDesc, contains('সাদাকায়ে জারিয়া'));
+    test('contains correct phone number and initiative support', () {
+      expect(Strings.devPhone, '01727328200');
+      expect(Strings.sadaqahSupportTitle, 'জীবনরক্ষাকারী উদ্যোগে সহায়তা ও অনুদান');
+      expect(Strings.sadaqahSupportDesc, contains('সহায়তা'));
     });
 
     test('dev phone formats correctly for WhatsApp international URL', () {

@@ -10,6 +10,7 @@ import '../core/phone_normalizer.dart';
 import '../core/strings_bn.dart';
 import '../data/donor.dart';
 import '../data/donor_repository.dart';
+import '../domain/eligibility.dart';
 import '../providers.dart';
 import 'blood_widgets.dart';
 import 'suggest_field.dart';
@@ -33,6 +34,7 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
   late String _area;
   String? _bloodGroup;
   String? _lastDate;
+  late bool _consentToShare;
   bool _saving = false;
 
   @override
@@ -47,10 +49,40 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
     _area = donor?.area ?? '';
     _bloodGroup = donor?.bloodGroup;
     _lastDate = donor?.lastDonationDate;
+    _consentToShare = donor?.consentToShare ?? true;
+
+    _phone.addListener(_onPhoneChanged);
+    _notes.addListener(_onNotesChanged);
+  }
+
+  void _onPhoneChanged() {
+    final text = _phone.text;
+    if (text.startsWith('+880')) {
+      _phone.value = TextEditingValue(
+        text: text.substring(3),
+        selection: TextSelection.collapsed(offset: text.length - 3),
+      );
+    } else if (text.startsWith('+88')) {
+      _phone.value = TextEditingValue(
+        text: text.substring(3),
+        selection: TextSelection.collapsed(offset: text.length - 3),
+      );
+    } else if (text.startsWith('8801')) {
+      _phone.value = TextEditingValue(
+        text: text.substring(2),
+        selection: TextSelection.collapsed(offset: text.length - 2),
+      );
+    }
+  }
+
+  void _onNotesChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _phone.removeListener(_onPhoneChanged);
+    _notes.removeListener(_onNotesChanged);
     _name.dispose();
     _phone.dispose();
     _notes.dispose();
@@ -94,7 +126,7 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
       bloodGroup: _bloodGroup!,
       gender: _gender,
       phone: PhoneNormalizer.normalize(_phone.text)!,
-      consentToShare: true,
+      consentToShare: _consentToShare,
       district: _district.trim(),
       area: _area.trim(),
       lastDonationDate: _lastDate,
@@ -331,53 +363,215 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(Strings.lastDonation),
-                        subtitle: Builder(
-                          builder: (context) {
-                            final parsed = parseIsoDate(_lastDate);
-                            return Text(
-                              parsed == null ? Strings.notSet : formatDateBn(parsed),
-                              style: TextStyle(
-                                color: parsed != null ? kCrimson : null,
-                                fontWeight: parsed != null ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            );
-                          },
+                      const SizedBox(height: 12),
+
+                      // সর্বশেষ রক্তদানের তারিখ নির্বাচক (উন্নত কন্টেইনার)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
+                              : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                          ),
                         ),
-                        onTap: _pickDate,
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (_lastDate != null)
-                              IconButton(
-                                tooltip: Strings.clear,
-                                icon: const Icon(Icons.clear_rounded),
-                                onPressed: () => setState(() => _lastDate = null),
-                              ),
-                            IconButton(
-                              tooltip: Strings.pickDate,
-                              icon: const Icon(Icons.calendar_month_rounded),
-                              onPressed: _pickDate,
+                            Row(
+                              children: [
+                                const Icon(Icons.calendar_today_rounded, size: 16, color: kCrimson),
+                                const SizedBox(width: 6),
+                                const Expanded(
+                                  child: Text(
+                                    Strings.lastDonation,
+                                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                  ),
+                                ),
+                                if (_lastDate != null)
+                                  IconButton(
+                                    tooltip: Strings.clear,
+                                    icon: const Icon(Icons.clear_rounded, size: 18),
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      setState(() => _lastDate = null);
+                                    },
+                                  ),
+                                OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    minimumSize: Size.zero,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  icon: const Icon(Icons.edit_calendar_rounded, size: 14),
+                                  label: Text(
+                                    _lastDate == null ? 'তারিখ দিন' : 'পরিবর্তন',
+                                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                                  ),
+                                  onPressed: _pickDate,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Builder(
+                              builder: (context) {
+                                final parsed = parseIsoDate(_lastDate);
+                                if (parsed == null) {
+                                  return Text(
+                                    'পূর্বে কখনো রক্ত দেননি অথবা নতুন ডোনার',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  );
+                                }
+                                final eligibility = Eligibility.check(
+                                  gender: _gender,
+                                  lastDonationDate: _lastDate,
+                                  today: DateTime.now(),
+                                );
+                                return Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: kCrimson.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        formatDateBn(parsed),
+                                        style: const TextStyle(
+                                          color: kCrimson,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        eligibility.eligible
+                                            ? 'বর্তমানে রক্তদানে প্রস্তুত'
+                                            : 'পরবর্তী রক্তদান: ${formatDateBn(eligibility.nextEligibleDate)}',
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: eligibility.eligible ? kEligibleGreen : kWaitSlate,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // বিশেষ নোট বা মন্তব্য ইনপুট ফর্ম
+                      Row(
+                        children: [
+                          Icon(Icons.notes_rounded, size: 16, color: theme.colorScheme.primary),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'বিশেষ নোট বা মন্তব্য (ঐচ্ছিক)',
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${_notes.text.length}/${AppConstants.maxNotesLength}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _notes,
                         maxLength: AppConstants.maxNotesLength,
-                        maxLines: 2,
-                        decoration: const InputDecoration(
-                          labelText: Strings.notes,
-                          prefixIcon: Icon(Icons.edit_note_rounded),
+                        minLines: 2,
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                        buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
+                        decoration: InputDecoration(
+                          hintText: 'যেমন: নিয়মিত রক্তদাতা, যেকোনো জরুরি সময়ে প্রস্তুত, বা যোগাযোগের সময়...',
+                          hintStyle: TextStyle(
+                            fontSize: 12.5,
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                          ),
+                          alignLabelWithHint: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          suffixIcon: _notes.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded, size: 18),
+                                  tooltip: Strings.clear,
+                                  onPressed: () {
+                                    _notes.clear();
+                                    setState(() {});
+                                  },
+                                )
+                              : null,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 8),
+
+                      // নোটের কুইক প্রিসেট চিপস
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final preset in const [
+                            'জরুরি প্রয়োজনে প্রস্তুত',
+                            'নিয়মিত রক্তদাতা',
+                            'প্রথমবার রক্তদাতা',
+                            'স্থায়ী বাসিন্দা',
+                            'ছাত্র / তরুণ রক্তদাতা',
+                          ])
+                            ActionChip(
+                              label: Text(preset, style: const TextStyle(fontSize: 11)),
+                              padding: EdgeInsets.zero,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                              backgroundColor: _notes.text.contains(preset)
+                                  ? kCrimson.withValues(alpha: 0.12)
+                                  : null,
+                              side: _notes.text.contains(preset)
+                                  ? BorderSide(color: kCrimson.withValues(alpha: 0.4))
+                                  : null,
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                final current = _notes.text.trim();
+                                if (current.contains(preset)) {
+                                  final updated = current
+                                      .replaceAll(preset, '')
+                                      .replaceAll(RegExp(r'\s*,\s*'), ', ')
+                                      .replaceAll(RegExp(r'^,\s*|,\s*$'), '')
+                                      .trim();
+                                  _notes.text = updated;
+                                } else {
+                                  if (current.isEmpty) {
+                                    _notes.text = preset;
+                                  } else {
+                                    _notes.text = '$current, $preset';
+                                  }
+                                }
+                                setState(() {});
+                              },
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // সম্মতি সুইচ
                       FormField<bool>(
-                        initialValue: widget.donor?.consentToShare ?? true,
+                        initialValue: _consentToShare,
                         validator: (value) => value == true ? null : Strings.consentRequired,
                         builder: (state) => Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,6 +581,7 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                               value: state.value ?? true,
                               onChanged: (value) {
                                 HapticFeedback.selectionClick();
+                                _consentToShare = value;
                                 state.didChange(value);
                               },
                               title: const Text(
