@@ -8,7 +8,7 @@ import '../app.dart';
 import '../core/areas.dart';
 import '../core/digits.dart';
 import '../core/strings_bn.dart';
-import '../data/donor_repository.dart' show DonorFilter;
+import '../data/donor_repository.dart' show DonorFilter, DonorSort;
 import '../domain/compatibility.dart';
 import '../providers.dart';
 import '../services/sync_service.dart';
@@ -17,10 +17,11 @@ import 'data_tools.dart';
 import 'donor_card.dart';
 import 'donor_form_screen.dart';
 import 'emergency_request_dialog.dart';
+import 'guidelines_sheet.dart';
 import 'notification_center_sheet.dart';
 import 'sync_settings_dialog.dart';
 
-enum _MenuAction { backup, restore, syncSettings, about }
+enum _MenuAction { backup, restore, syncSettings, guidelines, about }
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -99,6 +100,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         restoreBackup(context, ref);
       case _MenuAction.syncSettings:
         _showSyncDialog(context);
+      case _MenuAction.guidelines:
+        GuidelinesSheet.show(context);
       case _MenuAction.about:
         AboutAppDialog.show(context);
     }
@@ -110,6 +113,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final notifier = ref.read(filterProvider.notifier);
     final donors = ref.watch(donorListProvider);
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     final areaOptions = filter.district == null
         ? const <String>[]
@@ -186,6 +190,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onSelected: _onMenu,
             itemBuilder: (_) => const [
               PopupMenuItem(value: _MenuAction.syncSettings, child: Text(Strings.cloudSyncTitle)),
+              PopupMenuItem(value: _MenuAction.guidelines, child: Text(Strings.donationGuidelines)),
               PopupMenuItem(value: _MenuAction.backup, child: Text(Strings.backup)),
               PopupMenuItem(value: _MenuAction.restore, child: Text(Strings.restore)),
               PopupMenuItem(value: _MenuAction.about, child: Text(Strings.about)),
@@ -323,7 +328,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             filter.district != null ||
                             filter.area != null ||
                             filter.eligibleOnly ||
-                            filter.query.isNotEmpty) ...[
+                            filter.query.isNotEmpty ||
+                            filter.sortBy != DonorSort.nameAsc) ...[
                           const SizedBox(height: 10),
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
@@ -349,6 +355,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   _ActiveFilterTag(
                                     label: 'শুধুমাত্র প্রস্তুত',
                                     onRemove: () => notifier.setEligibleOnly(false),
+                                  ),
+                                if (filter.sortBy != DonorSort.nameAsc)
+                                  _ActiveFilterTag(
+                                    label: switch (filter.sortBy) {
+                                      DonorSort.readyFirst => Strings.sortReadyFirst,
+                                      DonorSort.mostDonations => Strings.sortMostDonations,
+                                      _ => '',
+                                    },
+                                    onRemove: () => notifier.setSortBy(DonorSort.nameAsc),
                                   ),
                                 if (filter.query.isNotEmpty)
                                   _ActiveFilterTag(
@@ -448,7 +463,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   filter.district != null ||
                                   filter.area != null ||
                                   filter.eligibleOnly ||
-                                  filter.query.isNotEmpty) ...[
+                                  filter.query.isNotEmpty ||
+                                  filter.sortBy != DonorSort.nameAsc) ...[
                                 InkWell(
                                   onTap: () {
                                     HapticFeedback.lightImpact();
@@ -470,6 +486,116 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                                 const SizedBox(width: 8),
                               ],
+                              // সর্টিং নির্বাচক
+                              PopupMenuButton<DonorSort>(
+                                tooltip: Strings.sortBy,
+                                onSelected: (sort) {
+                                  HapticFeedback.selectionClick();
+                                  notifier.setSortBy(sort);
+                                },
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                itemBuilder: (_) => [
+                                  PopupMenuItem(
+                                    value: DonorSort.nameAsc,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.sort_by_alpha_rounded,
+                                          size: 18,
+                                          color: filter.sortBy == DonorSort.nameAsc ? kCrimson : null,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          Strings.sortName,
+                                          style: TextStyle(
+                                            fontWeight: filter.sortBy == DonorSort.nameAsc ? FontWeight.bold : FontWeight.normal,
+                                            color: filter.sortBy == DonorSort.nameAsc ? kCrimson : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: DonorSort.readyFirst,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.access_time_filled_rounded,
+                                          size: 18,
+                                          color: filter.sortBy == DonorSort.readyFirst ? kEligibleGreen : null,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          Strings.sortReadyFirst,
+                                          style: TextStyle(
+                                            fontWeight: filter.sortBy == DonorSort.readyFirst ? FontWeight.bold : FontWeight.normal,
+                                            color: filter.sortBy == DonorSort.readyFirst ? kEligibleGreen : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: DonorSort.mostDonations,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.military_tech_rounded,
+                                          size: 18,
+                                          color: filter.sortBy == DonorSort.mostDonations ? Colors.amber.shade800 : null,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          Strings.sortMostDonations,
+                                          style: TextStyle(
+                                            fontWeight: filter.sortBy == DonorSort.mostDonations ? FontWeight.bold : FontWeight.normal,
+                                            color: filter.sortBy == DonorSort.mostDonations ? Colors.amber.shade800 : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                                  decoration: BoxDecoration(
+                                    color: filter.sortBy != DonorSort.nameAsc
+                                        ? kCrimson.withValues(alpha: isDark ? 0.2 : 0.1)
+                                        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      color: filter.sortBy != DonorSort.nameAsc
+                                          ? kCrimson.withValues(alpha: 0.4)
+                                          : Colors.transparent,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.sort_rounded,
+                                        size: 14,
+                                        color: filter.sortBy != DonorSort.nameAsc ? kCrimson : theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        switch (filter.sortBy) {
+                                          DonorSort.nameAsc => Strings.sortName,
+                                          DonorSort.readyFirst => Strings.sortReadyFirst,
+                                          DonorSort.mostDonations => Strings.sortMostDonations,
+                                        },
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: filter.sortBy != DonorSort.nameAsc ? FontWeight.bold : FontWeight.w600,
+                                          color: filter.sortBy != DonorSort.nameAsc ? kCrimson : theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
                               Tooltip(
                                 message: _isCompactView ? Strings.viewDetailed : Strings.viewCompact,
                                 child: InkWell(

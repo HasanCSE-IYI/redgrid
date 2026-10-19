@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/digits.dart';
 import '../core/strings_bn.dart';
 
 /// হোয়াটসঅ্যাপ, এসএমএস ও সোশ্যাল মিডিয়া পোস্ট সংক্রান্ত সাহায্যকারী সেবা।
@@ -135,6 +136,29 @@ class ContactService {
       patientHospital: patientHospital,
     );
     return openWhatsApp(phone: phone, message: message);
+  }
+
+  /// রক্তদাতাকে সম্মাননা ও ধন্যবাদ জানানোর জন্য মার্জিত বার্তা।
+  static String composeAppreciationMessage({
+    required String donorName,
+    required String bloodGroup,
+    required int totalDonations,
+    required String milestoneTitle,
+  }) {
+    final buffer = StringBuffer();
+    buffer.writeln('❤️ লাইফসেভার সম্মাননা ও আন্তরিক কৃতজ্ঞতা ❤️');
+    buffer.writeln('');
+    buffer.writeln('শ্রদ্ধেয় রক্তদাতা: $donorName');
+    buffer.writeln('🩸 রক্তের গ্রুপ: $bloodGroup');
+    buffer.writeln('🏆 স্বীকৃতি: $milestoneTitle (${toBanglaDigits(totalDonations)} বার রক্তদান সম্পন্ন)');
+    buffer.writeln('');
+    buffer.writeln('আপনার নিঃস্বার্থ রক্তদানে আজ একটি মূল্যবান মানবজীবন রক্ষা পেয়েছে এবং একটি পরিবারের মুখে হাসি ফুটেছে। মানবতার সেবায় এমন অসাধারণ অবদানের জন্য আমাদের আন্তরিক অভিনন্দন ও গভীর কৃতজ্ঞতা।');
+    buffer.writeln('');
+    buffer.writeln('"যে ব্যক্তি একটি নির্দোষ মানুষের প্রাণ রক্ষা করল, সে যেন সমগ্র মানবজাতিকে রক্ষা করল।"');
+    buffer.writeln('');
+    buffer.writeln('মানবতার সেবায় আপনার এই মহতী অবদান চিরস্মরণীয়।');
+    buffer.writeln('— RedGrid (লাইফসেভার নেটওয়ার্ক)');
+    return buffer.toString().trim();
   }
 }
 

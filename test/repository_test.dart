@@ -7,6 +7,7 @@ import 'package:redgrid/data/app_database.dart';
 import 'package:redgrid/data/donor.dart';
 import 'package:redgrid/data/donor_repository.dart';
 import 'package:redgrid/services/backup_service.dart';
+import 'package:redgrid/services/contact_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// আজকের তারিখ থেকে হিসাব করা তারিখ (ভ্যালিডেটর ভবিষ্যতের তারিখ বাতিল করে)।
@@ -208,6 +209,48 @@ void main() {
       final donors = await repo.search(const DonorFilter());
       expect(donors.length, 1);
       expect(donors.first.phone, '01733333333');
+    });
+  });
+
+  group('স্মার্ট সর্টিং (Smart Sorting)', () {
+    test('DonorSort.readyFirst প্রস্তুত ডোনারদের আগে প্রদর্শন করে', () async {
+      await repo.insert(_donor(name: 'ডোনার ৩ (সম্প্রতি দান)', phone: '01710000003', last: daysAgo(10)));
+      await repo.insert(_donor(name: 'ডোনার ১ (কখনো দান করেনি)', phone: '01710000001', last: null));
+      await repo.insert(_donor(name: 'ডোনার ২ (আগে দান)', phone: '01710000002', last: daysAgo(120)));
+
+      final results = await repo.search(const DonorFilter(sortBy: DonorSort.readyFirst));
+      expect(results.length, 3);
+      expect(results[0].name, 'ডোনার ১ (কখনো দান করেনি)');
+      expect(results[1].name, 'ডোনার ২ (আগে দান)');
+      expect(results[2].name, 'ডোনার ৩ (সম্প্রতি দান)');
+    });
+
+    test('DonorSort.mostDonations সর্বোচ্চ রক্তদানকারী আগে প্রদর্শন করে', () async {
+      final id1 = await repo.insert(_donor(name: '১ বার দাতা', phone: '01720000001'));
+      final id2 = await repo.insert(_donor(name: '৩ বার দাতা', phone: '01720000002'));
+      await repo.markDonated(id1, daysAgo(100));
+      await repo.markDonated(id2, daysAgo(200));
+      await repo.markDonated(id2, daysAgo(150));
+      await repo.markDonated(id2, daysAgo(100));
+
+      final results = await repo.search(const DonorFilter(sortBy: DonorSort.mostDonations));
+      expect(results.first.name, '৩ বার দাতা');
+      expect(results.first.totalDonations, 3);
+    });
+  });
+
+  group('সম্মাননা ও কৃতজ্ঞতা বার্তা (Appreciation Message)', () {
+    test('composeAppreciationMessage সঠিক বার্তা প্রস্তুত করে', () {
+      final msg = ContactService.composeAppreciationMessage(
+        donorName: 'তানভীর',
+        bloodGroup: 'B+',
+        totalDonations: 5,
+        milestoneTitle: 'সিলভার ডোনার',
+      );
+      expect(msg, contains('তানভীর'));
+      expect(msg, contains('B+'));
+      expect(msg, contains('সিলভার ডোনার'));
+      expect(msg, contains('৫ বার'));
     });
   });
 }

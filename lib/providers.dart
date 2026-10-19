@@ -36,6 +36,7 @@ class FilterNotifier extends Notifier<DonorFilter> {
   void setArea(String? value) => state = state.copyWith(area: value);
   void setQuery(String value) => state = state.copyWith(query: value);
   void setEligibleOnly(bool value) => state = state.copyWith(eligibleOnly: value);
+  void setSortBy(DonorSort sort) => state = state.copyWith(sortBy: sort);
   void reset() => state = const DonorFilter();
 }
 

@@ -14,6 +14,12 @@ class DuplicatePhoneException implements Exception {
 
 enum MarkDonatedResult { created, alreadyLogged }
 
+enum DonorSort {
+  nameAsc,
+  readyFirst,
+  mostDonations,
+}
+
 const Object _unset = Object();
 
 class DonorFilter {
@@ -24,6 +30,7 @@ class DonorFilter {
     this.query = '',
     this.eligibleOnly = false,
     this.includeCompatible = false,
+    this.sortBy = DonorSort.nameAsc,
   });
 
   final String? bloodGroup;
@@ -32,6 +39,7 @@ class DonorFilter {
   final String query;
   final bool eligibleOnly;
   final bool includeCompatible;
+  final DonorSort sortBy;
 
   DonorFilter copyWith({
     Object? bloodGroup = _unset,
@@ -40,6 +48,7 @@ class DonorFilter {
     String? query,
     bool? eligibleOnly,
     bool? includeCompatible,
+    DonorSort? sortBy,
   }) {
     return DonorFilter(
       bloodGroup: identical(bloodGroup, _unset) ? this.bloodGroup : bloodGroup as String?,
@@ -48,6 +57,7 @@ class DonorFilter {
       query: query ?? this.query,
       eligibleOnly: eligibleOnly ?? this.eligibleOnly,
       includeCompatible: includeCompatible ?? this.includeCompatible,
+      sortBy: sortBy ?? this.sortBy,
     );
   }
 }
@@ -75,7 +85,16 @@ class DonorRepository {
   Future<List<Donor>> search(DonorFilter filter, {DateTime? now}) async {
     final where = <String>[];
     final args = <Object?>[];
-    String orderBy = 'name COLLATE NOCASE';
+
+    final String sortClause = switch (filter.sortBy) {
+      DonorSort.nameAsc => 'name COLLATE NOCASE ASC',
+      DonorSort.readyFirst =>
+        'CASE WHEN last_donation_date IS NULL THEN 0 ELSE 1 END, last_donation_date ASC, name COLLATE NOCASE ASC',
+      DonorSort.mostDonations =>
+        'total_donations DESC, name COLLATE NOCASE ASC',
+    };
+
+    String orderBy = sortClause;
 
     if (filter.bloodGroup != null) {
       if (filter.includeCompatible) {
@@ -84,7 +103,7 @@ class DonorRepository {
         where.add('blood_group IN ($placeholders)');
         args.addAll(compatible);
         final safeGroup = filter.bloodGroup!.replaceAll("'", "''");
-        orderBy = "CASE WHEN blood_group = '$safeGroup' THEN 0 ELSE 1 END, name COLLATE NOCASE";
+        orderBy = "CASE WHEN blood_group = '$safeGroup' THEN 0 ELSE 1 END, $sortClause";
       } else {
         where.add('blood_group = ?');
         args.add(filter.bloodGroup);

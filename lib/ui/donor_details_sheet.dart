@@ -8,6 +8,7 @@ import '../core/digits.dart';
 import '../core/strings_bn.dart';
 import '../data/donor.dart';
 import '../providers.dart';
+import 'appreciation_dialog.dart';
 import 'blood_widgets.dart';
 
 /// বাংলা মাসের নাম দিয়ে পূর্ণাঙ্গ তারিখ ফরম্যাট (যেমন: ১৯ অক্টোবর, ২০২৬)
@@ -404,8 +405,32 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          // লাইফসেভার সম্মাননা ও ধন্যবাদ বার্তা বাটন
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: OutlinedButton.icon(
+                onPressed: () => AppreciationDialog.show(context, donor),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isDark ? const Color(0xFFFF8A80) : kCrimson,
+                  side: BorderSide(
+                    color: kCrimson.withValues(alpha: isDark ? 0.4 : 0.35),
+                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.workspace_premium_rounded, size: 17),
+                label: const Text(
+                  Strings.sendAppreciation,
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 6),
-          const Divider(height: 20),
+          const Divider(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(

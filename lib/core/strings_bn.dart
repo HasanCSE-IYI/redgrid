@@ -219,4 +219,21 @@ class Strings {
   static const profileAction = 'প্রোফাইল';
   static const viewDetails = 'বিস্তারিত দেখুন';
   static const newNotificationToast = 'নতুন বিজ্ঞপ্তি';
+
+  // সর্টিং (Sorting)
+  static const sortBy = 'সাজান';
+  static const sortName = 'নাম (ক-হ)';
+  static const sortReadyFirst = 'প্রস্তুত ডোনার আগে';
+  static const sortMostDonations = 'সর্বোচ্চ রক্তদান';
+
+  // রক্তদান সহায়িকা (Donation Guidelines & Medical FAQ)
+  static const donationGuidelines = 'রক্তদান সহায়িকা';
+  static const guidelinesTitle = 'রক্তদান সহায়িকা ও স্বাস্থ্যবিধি';
+  static const guidelinesSubtitle = 'যোগ্যতার শর্তাবলী, প্রস্তুতি ও সতর্কতা';
+
+  // সম্মাননা ও কৃতজ্ঞতা (Appreciation & Recognition)
+  static const sendAppreciation = 'ধন্যবাদ বার্তা পাঠান';
+  static const appreciationTitle = 'লাইফসেভার সম্মাননা ও কৃতজ্ঞতা';
+  static const sendWhatsAppAppreciation = 'WhatsApp-এ পাঠান';
+  static const appreciationCopied = 'সম্মাননা বার্তা কপি করা হয়েছে';
 }
