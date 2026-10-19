@@ -127,7 +127,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
 
     if (widget.isCompact) {
       return Card(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 3.5),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
@@ -137,7 +137,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
           onTap: _showDetails,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             child: Row(
               children: [
                 BloodGroupBadge(
@@ -250,15 +250,15 @@ class _DonorCardState extends ConsumerState<DonorCard> {
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         side: donorCardBorderSide(theme, isCompatibleMatch: isCompatibleMatch),
       ),
       child: InkWell(
         onTap: _showDetails,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -395,12 +395,16 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                   IconButton.filledTonal(
                     tooltip: Strings.whatsapp,
                     style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFF25D366).withValues(alpha: 0.12),
+                      backgroundColor: const Color(0xFF25D366).withValues(alpha: isDark ? 0.2 : 0.12),
                       foregroundColor: const Color(0xFF25D366),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       visualDensity: VisualDensity.compact,
                     ),
-                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                    onPressed: _whatsapp,
+                    icon: const Icon(Icons.chat_bubble_rounded, size: 17),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _whatsapp();
+                    },
                   ),
                   const SizedBox(width: 8),
 
@@ -410,8 +414,8 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                           style: FilledButton.styleFrom(
                             backgroundColor: kEligibleGreen,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             visualDensity: VisualDensity.compact,
                             elevation: 0,
                           ),
@@ -420,7 +424,10 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                             Strings.callNow,
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                           ),
-                          onPressed: _call,
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _call();
+                          },
                         )
                       : OutlinedButton.icon(
                           style: OutlinedButton.styleFrom(
@@ -428,8 +435,8 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                             side: BorderSide(
                               color: isDark ? Colors.white24 : Colors.grey.shade400,
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             visualDensity: VisualDensity.compact,
                           ),
                           icon: const Icon(Icons.call_outlined, size: 15),
@@ -437,7 +444,10 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                             Strings.call,
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                           ),
-                          onPressed: _call,
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _call();
+                          },
                         ),
                 ],
               ),

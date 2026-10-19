@@ -23,7 +23,7 @@ class BloodGroupBadge extends StatelessWidget {
     required this.bloodGroup,
     this.size = 48,
     this.fontSize = 18,
-    this.borderRadius = 12,
+    this.borderRadius = 14,
     this.filled = false,
     this.isCompatibleMatch = false,
   });
@@ -42,12 +42,19 @@ class BloodGroupBadge extends StatelessWidget {
         width: size,
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: kCrimson,
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFE53935),
+              Color(0xFFB71C1C),
+            ],
+          ),
           borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: [
             BoxShadow(
-              color: kCrimson.withValues(alpha: 0.28),
-              blurRadius: 8,
+              color: const Color(0xFFC62828).withValues(alpha: 0.32),
+              blurRadius: 9,
               offset: const Offset(0, 3),
             ),
           ],
@@ -76,9 +83,10 @@ class BloodGroupBadge extends StatelessWidget {
                 child: const Text(
                   Strings.matchBadge,
                   style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w800,
                     color: Color(0xFF5D4037),
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),
@@ -92,7 +100,7 @@ class BloodGroupBadge extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: kCrimson.withValues(alpha: 0.1),
+        color: kCrimson.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: kCrimson.withValues(alpha: 0.35), width: 1.2),
       ),

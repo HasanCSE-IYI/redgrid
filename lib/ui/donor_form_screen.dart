@@ -411,13 +411,15 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                 style: FilledButton.styleFrom(
                   backgroundColor: kCrimson,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 0,
                 ),
                 child: _saving
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
                       )
                     : const Text(
                         Strings.save,
@@ -453,22 +455,27 @@ class _BloodGroupFormChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeInOut,
           height: 38,
           alignment: Alignment.center,
           decoration: BoxDecoration(
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [Color(0xFFE53935), Color(0xFFB71C1C)],
+                  )
+                : null,
             color: isSelected
-                ? kCrimson
+                ? null
                 : (isDark
                     ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
                     : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected
-                  ? kCrimson
+                  ? const Color(0xFFB71C1C)
                   : theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
               width: isSelected ? 1.5 : 1,
             ),
@@ -476,8 +483,8 @@ class _BloodGroupFormChip extends StatelessWidget {
                 ? [
                     BoxShadow(
                       color: kCrimson.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1.5),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
                     ),
                   ]
                 : null,

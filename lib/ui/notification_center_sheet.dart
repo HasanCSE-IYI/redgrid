@@ -519,7 +519,7 @@ class HomeNotificationBanner extends ConsumerWidget {
               Colors.orange.shade50,
             ),
           NotificationType.emergencyNotice => (
-              Icons.emergency_share_rounded,
+              Icons.emergency_rounded,
               kCrimson,
               kCrimson.withValues(alpha: 0.1),
             ),
