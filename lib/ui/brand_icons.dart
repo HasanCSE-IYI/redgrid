@@ -11,7 +11,7 @@ class BrandIcon extends StatelessWidget {
     this.color,
   });
 
-  final _BrandType type;
+  final BrandType type;
   final double size;
   final Color? color;
 
@@ -22,19 +22,19 @@ class BrandIcon extends StatelessWidget {
   static const Color facebookBlue = Color(0xFF1877F2);
 
   factory BrandIcon.whatsapp({Key? key, double size = 20, Color? color}) =>
-      BrandIcon._(key: key, type: _BrandType.whatsapp, size: size, color: color);
+      BrandIcon._(key: key, type: BrandType.whatsapp, size: size, color: color);
 
   factory BrandIcon.bkash({Key? key, double size = 20, Color? color}) =>
-      BrandIcon._(key: key, type: _BrandType.bkash, size: size, color: color);
+      BrandIcon._(key: key, type: BrandType.bkash, size: size, color: color);
 
   factory BrandIcon.nagad({Key? key, double size = 20, Color? color}) =>
-      BrandIcon._(key: key, type: _BrandType.nagad, size: size, color: color);
+      BrandIcon._(key: key, type: BrandType.nagad, size: size, color: color);
 
   factory BrandIcon.cellfin({Key? key, double size = 20, Color? color}) =>
-      BrandIcon._(key: key, type: _BrandType.cellfin, size: size, color: color);
+      BrandIcon._(key: key, type: BrandType.cellfin, size: size, color: color);
 
   factory BrandIcon.facebook({Key? key, double size = 20, Color? color}) =>
-      BrandIcon._(key: key, type: _BrandType.facebook, size: size, color: color);
+      BrandIcon._(key: key, type: BrandType.facebook, size: size, color: color);
 
   @override
   Widget build(BuildContext context) {
@@ -48,12 +48,12 @@ class BrandIcon extends StatelessWidget {
   }
 }
 
-enum _BrandType { whatsapp, bkash, nagad, cellfin, facebook }
+enum BrandType { whatsapp, bkash, nagad, cellfin, facebook }
 
 class _BrandPainter extends CustomPainter {
   const _BrandPainter({required this.type, this.customColor});
 
-  final _BrandType type;
+  final BrandType type;
   final Color? customColor;
 
   @override
@@ -62,19 +62,19 @@ class _BrandPainter extends CustomPainter {
     final h = size.height;
 
     switch (type) {
-      case _BrandType.whatsapp:
+      case BrandType.whatsapp:
         _drawWhatsApp(canvas, w, h);
         break;
-      case _BrandType.bkash:
+      case BrandType.bkash:
         _drawBkash(canvas, w, h);
         break;
-      case _BrandType.nagad:
+      case BrandType.nagad:
         _drawNagad(canvas, w, h);
         break;
-      case _BrandType.cellfin:
+      case BrandType.cellfin:
         _drawCellFin(canvas, w, h);
         break;
-      case _BrandType.facebook:
+      case BrandType.facebook:
         _drawFacebook(canvas, w, h);
         break;
     }

@@ -360,7 +360,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _units,
+                        initialValue: _units,
                         decoration: const InputDecoration(
                           labelText: Strings.unitsNeeded,
                           prefixIcon: Icon(Icons.water_drop_outlined),
@@ -384,7 +384,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                     const SizedBox(width: 10),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _when,
+                        initialValue: _when,
                         decoration: const InputDecoration(
                           labelText: Strings.whenNeeded,
                           prefixIcon: Icon(Icons.schedule_outlined),

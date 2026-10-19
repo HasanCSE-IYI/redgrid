@@ -163,6 +163,7 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isEdit = widget.donor != null;
 
     return Scaffold(
@@ -455,7 +456,9 @@ class _DonorFormScreenState extends ConsumerState<DonorFormScreen> {
                                       child: Text(
                                         eligibility.eligible
                                             ? 'বর্তমানে রক্তদানে প্রস্তুত'
-                                            : 'পরবর্তী রক্তদান: ${formatDateBn(eligibility.nextEligibleDate)}',
+                                            : (eligibility.nextEligibleDate != null
+                                                ? 'পরবর্তী রক্তদান: ${formatDateBn(eligibility.nextEligibleDate!)}'
+                                                : 'অপেক্ষমাণ'),
                                         style: TextStyle(
                                           fontSize: 11.5,
                                           fontWeight: FontWeight.w600,
