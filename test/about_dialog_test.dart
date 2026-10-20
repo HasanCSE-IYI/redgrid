@@ -21,9 +21,9 @@ void main() {
 
     test('supported channels include WhatsApp, bKash, Nagad, and CellFin', () {
       expect(Strings.supportedChannels, contains('WhatsApp'));
-      expect(Strings.supportedChannels, contains('বিকাশ'));
-      expect(Strings.supportedChannels, contains('নগদ'));
-      expect(Strings.supportedChannels, contains('সেলফিন'));
+      expect(Strings.supportedChannels, contains('bKash'));
+      expect(Strings.supportedChannels, contains('Nagad'));
+      expect(Strings.supportedChannels, contains('CellFin'));
     });
   });
 }

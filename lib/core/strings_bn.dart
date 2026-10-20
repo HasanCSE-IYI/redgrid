@@ -52,9 +52,9 @@ class Strings {
   static const alreadyLogged = 'এই তারিখের দান আগেই লগ করা আছে';
   static const donationSaved = 'রক্তদান লগ হয়েছে';
   static const undo = 'ফেরান';
-  static const call = 'কল করুন';
+  static const call = 'Call';
   static const callFailed = 'কল করা যায়নি';
-  static const copyPhone = 'ফোন নম্বর কপি';
+  static const copyPhone = 'Copy Number';
   static const phoneCopied = 'ফোন নম্বর কপি করা হয়েছে';
   static const menu = 'আরও বিকল্প';
 
@@ -65,10 +65,10 @@ class Strings {
       '$recipient গ্রুপের জন্য গ্রহণযোগ্য: ${groups.join(', ')}';
 
   // সরাসরি যোগাযোগ (WhatsApp & SMS)
-  static const whatsapp = 'হোয়াটসঅ্যাপ';
-  static const sms = 'মেসেজ';
-  static const whatsappFailed = 'হোয়াটসঅ্যাপ চালু করা যায়নি। বার্তাটি কপি করা হয়েছে।';
-  static const smsFailed = 'মেসেজ অ্যাপ চালু করা যায়নি। বার্তাটি কপি করা হয়েছে।';
+  static const whatsapp = 'WhatsApp';
+  static const sms = 'SMS';
+  static const whatsappFailed = 'WhatsApp চালু করা যায়নি। বার্তাটি কপি করা হয়েছে।';
+  static const smsFailed = 'SMS অ্যাপ চালু করা যায়নি। বার্তাটি কপি করা হয়েছে।';
   static const messageCopied = 'বার্তা ক্লিপবোর্ডে কপি করা হয়েছে';
 
   // জরুরি রক্তের আবেদন (Emergency Request & Social Broadcast)
@@ -83,8 +83,8 @@ class Strings {
   static const reason = 'রোগীর সমস্যা / কারণ (ঐচ্ছিক)';
   static const reasonHint = 'যেমন: সিজারিয়ান / দুর্ঘটনা / থ্যালাসেমিয়া';
   static const contactPhone = 'যোগাযোগের ফোন নম্বর';
-  static const sharePost = 'পোস্ট শেয়ার';
-  static const copyPost = 'পোস্ট কপি';
+  static const sharePost = 'Share Post';
+  static const copyPost = 'Copy Post';
   static const findEligibleDonors = 'ডোনার খুঁজুন';
   static const postCopied = 'আবেদনের লেখা কপি করা হয়েছে';
   static const broadcastHeader = '🚨 #জরুরি_রক্তের_প্রয়োজন 🚨';
@@ -92,20 +92,20 @@ class Strings {
   static const emergencyBannerTitle = 'জরুরি রক্তের প্রয়োজন?';
   static const emergencyBannerSub = 'সোশ্যাল মিডিয়ার জন্য দ্রুত পোস্ট তৈরি ও শেয়ার করুন';
   static const createPostAction = 'পোস্ট তৈরি';
-  static const callWaiting = 'কল (অপেক্ষমান)';
-  static const offlineReady = '১০০% অফলাইন';
+  static const callWaiting = 'Call (অপেক্ষমান)';
+  static const offlineReady = '100% Offline';
   static const livesSavedEstimate = 'জীবন রক্ষায় ভূমিকা';
   static const livesImpactText = 'জন মানুষের জীবন বাঁচাতে সহায়তা করেছেন';
   static const clearFilter = 'ফিল্টার মুছুন';
-  static const viewDetailed = 'বিস্তারিত ভিউ';
-  static const viewCompact = 'কমপ্যাক্ট ভিউ';
-  static const offlineBadge = 'অফলাইন';
+  static const viewDetailed = 'Detailed View';
+  static const viewCompact = 'Compact View';
+  static const offlineBadge = 'Offline';
   static const waitingStatus = 'অপেক্ষমান';
   static const sectionPersonalInfo = 'ব্যক্তিগত তথ্য';
   static const sectionContactLocation = 'যোগাযোগ ও অবস্থান';
   static const sectionDonationConsent = 'রক্তদানের তথ্য ও সম্মতি';
-  static const socialPreviewTitle = 'সোশ্যাল পোস্ট প্রিভিউ';
-  static const matchBadge = 'ম্যাচ';
+  static const socialPreviewTitle = 'পোস্ট প্রিভিউ';
+  static const matchBadge = 'MATCH';
   static const donorReadyTooltip = 'ডোনার রক্তদানে সম্পূর্ণ প্রস্তুত';
   static const nextEligiblePrefix = 'পরবর্তী সম্ভাব্য তারিখ:';
   static String donorsFound(Object count) => '$count জন ডোনার পাওয়া গেছে';
@@ -132,13 +132,13 @@ class Strings {
   static const findCompatibleAction = 'সামঞ্জস্যপূর্ণ ডোনার খুঁজুন';
   static const createEmergencyPost = 'জরুরি রক্তের আবেদন তৈরি করুন';
   static const resetFilters = 'ফিল্টার রিসেট করুন';
-  static const callNow = 'কল করুন';
+  static const callNow = 'Call';
   static const readyToDonate = 'রক্তদানে প্রস্তুত';
   static const errorLoad = 'তালিকা লোড করা যায়নি';
   static const retry = 'আবার চেষ্টা করুন';
 
-  static const backup = 'ব্যাকআপ';
-  static const restore = 'রিস্টোর';
+  static const backup = 'Backup';
+  static const restore = 'Restore';
   static const about = 'সম্পর্কে';
   static const developedBy = 'Developed by Bhuiyan Ghazi';
   static const devPhone = '01727328200';
@@ -147,8 +147,8 @@ class Strings {
   static const sadaqahSupportTitle = 'প্রজেক্টে সাপোর্ট করুন';
   static const sadaqahSupportDesc =
       'জরুরি প্রয়োজনে রক্ত সন্ধান সহজ করে মানুষের জীবন বাঁচাতে RedGrid সম্পূর্ণ বিনামূল্যে উন্মুক্ত রাখা হয়েছে। অ্যাপটির নিরবচ্ছিন্ন সেবা, সার্ভার খরচ ও ধারাবাহিক উন্নয়নে আপনিও সাপোর্ট দিয়ে পাশে থাকতে পারেন।';
-  static const supportedChannels = 'WhatsApp • বিকাশ • নগদ • সেলফিন';
-  static const copyNumber = 'নম্বর কপি';
+  static const supportedChannels = 'WhatsApp • bKash • Nagad • CellFin';
+  static const copyNumber = 'Copy Number';
   static const numberCopied = 'নম্বর কপি করা হয়েছে: 01727328200';
   static const backupWarning =
       'ব্যাকআপ ফাইল এনক্রিপ্টেড নয় এবং এতে সবার ফোন নম্বর আছে। ফাইলটি নিরাপদ রাখুন।';
@@ -174,14 +174,14 @@ class Strings {
   static const errNotes = 'নোট খুব বড় (সর্বোচ্চ ৩০০ অক্ষর)';
 
   // ক্লাউড সিঙ্ক (Cloud Sync)
-  static const cloudSync = 'ক্লাউড সিঙ্ক';
-  static const cloudSyncTitle = 'ক্লাউড সিঙ্ক সেটিংস';
+  static const cloudSync = 'Cloud Sync';
+  static const cloudSyncTitle = 'Cloud Sync Settings';
   static const cloudSyncUrl = 'Worker URL';
   static const cloudSyncUrlHint = 'https://your-worker.workers.dev';
   static const cloudSyncKey = 'Sync Key (ঐচ্ছিক)';
   static const cloudSyncKeyHint = 'গোপন পাসওয়ার্ড (না থাকলে ফাঁকা রাখুন)';
-  static const cloudSyncSave = 'সংরক্ষণ ও সিঙ্ক করুন';
-  static const cloudSyncTest = 'পরীক্ষা করুন';
+  static const cloudSyncSave = 'সংরক্ষণ ও সিঙ্ক';
+  static const cloudSyncTest = 'Test Connection';
   static const cloudSyncClear = 'সিঙ্ক সংযোগ বাতিল';
   static const cloudSyncing = 'সিঙ্ক হচ্ছে…';
   static const cloudSyncDone = 'সিঙ্ক সম্পন্ন হয়েছে';
@@ -191,16 +191,16 @@ class Strings {
   static String cloudSyncSuccess(int donors, int logs) =>
       'সিঙ্ক সম্পন্ন: $donors জন ডোনার, $logs টি লগ আপডেট হয়েছে';
   static String cloudSyncError(String msg) => 'সিঙ্ক ত্রুটি: $msg';
-  static const cloudSyncLastSynced = 'শেষ সিঙ্ক';
-  static const cloudSyncNeverSynced = 'এখনো সিঙ্ক হয়নি';
-  static const cloudSyncConnected = 'ক্লাউড সংযুক্ত';
+  static const cloudSyncLastSynced = 'Last Synced';
+  static const cloudSyncNeverSynced = 'Never synced';
+  static const cloudSyncConnected = 'Connected';
   static const cloudSyncUrlRequired = 'Worker URL আবশ্যক';
-  static const cloudSyncBuiltIn = 'বিল্ট-ইন ক্লাউড ব্যাকএন্ড (সক্রিয়)';
-  static const cloudSyncCustom = 'কাস্টম সার্ভার ব্যবহার হচ্ছে';
-  static const cloudSyncSyncNow = 'এখনই সিঙ্ক করুন';
-  static const cloudSyncResetDefault = 'ডিফল্ট সার্ভারে ফেরত যান';
+  static const cloudSyncBuiltIn = 'Built-in Cloud (Active)';
+  static const cloudSyncCustom = 'Custom Server';
+  static const cloudSyncSyncNow = 'Sync Now';
+  static const cloudSyncResetDefault = 'Reset to Default';
   static const cloudSyncResetDone = 'ডিফল্ট সার্ভার পুনঃস্থাপিত হয়েছে';
-  static const cloudSyncAdvancedSettings = 'উন্নত সার্ভার সেটিংস (ঐচ্ছিক)';
+  static const cloudSyncAdvancedSettings = 'Advanced Settings (Optional)';
   static const cloudSyncBuiltInDesc = 'RedGrid এর সুরক্ষিত বিল্ট-ইন সার্ভারের মাধ্যমে ডেটা অটোমেটিক সিঙ্ক হচ্ছে।';
 
   // নোটিফিকেশন ও অ্যালার্ট (Notifications & Alerts)
@@ -212,11 +212,11 @@ class Strings {
   static const clearAll = 'সব মুছুন';
   static const filterAll = 'সব';
   static const filterReady = 'রক্তদানে প্রস্তুত';
-  static const filterSync = 'সিঙ্ক ও সিস্টেম';
+  static const filterSync = 'Sync & System';
   static const readyToDonateTitle = 'রক্তদানে প্রস্তুত ডোনার';
-  static const callAction = 'কল';
+  static const callAction = 'Call';
   static const whatsappAction = 'WhatsApp';
-  static const profileAction = 'প্রোফাইল';
+  static const profileAction = 'Profile';
   static const viewDetails = 'বিস্তারিত দেখুন';
   static const newNotificationToast = 'নতুন বিজ্ঞপ্তি';
 

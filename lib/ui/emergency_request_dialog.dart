@@ -580,7 +580,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                         label: const FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'শেয়ার',
+                            'Share',
                             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
                           ),
                         ),
@@ -599,7 +599,7 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                         label: const FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            'কপি',
+                            'Copy',
                             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
                           ),
                         ),

@@ -124,7 +124,7 @@ class AboutAppDialog extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'ডেভেলপার',
+                            'Developer',
                             style: TextStyle(
                               fontSize: 11,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -270,19 +270,19 @@ class AboutAppDialog extends StatelessWidget {
                         ),
                         _buildBadge(
                           icon: Icons.account_balance_wallet_rounded,
-                          label: 'বিকাশ (bKash)',
+                          label: 'bKash',
                           color: const Color(0xFFE2136E),
                           isDark: isDark,
                         ),
                         _buildBadge(
                           icon: Icons.monetization_on_rounded,
-                          label: 'নগদ (Nagad)',
+                          label: 'Nagad',
                           color: const Color(0xFFF7941D),
                           isDark: isDark,
                         ),
                         _buildBadge(
                           icon: Icons.account_balance_rounded,
-                          label: 'সেলফিন (CellFin)',
+                          label: 'CellFin',
                           color: const Color(0xFF0072BC),
                           isDark: isDark,
                         ),
@@ -304,7 +304,7 @@ class AboutAppDialog extends StatelessWidget {
                             ),
                             icon: const Icon(Icons.copy_rounded, size: 15),
                             label: const Text(
-                              'কপি',
+                              'Copy',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                             ),
                             onPressed: () => _copy(context),
@@ -336,7 +336,7 @@ class AboutAppDialog extends StatelessWidget {
                             ),
                             icon: const Icon(Icons.call_rounded, size: 15),
                             label: const Text(
-                              'কল',
+                              'Call',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                             ),
                             onPressed: () => _call(context),

@@ -222,7 +222,7 @@ class AppreciationDialog extends StatelessWidget {
                       label: const FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          'কপি করুন',
+                          'Copy',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
                         ),
                       ),
@@ -240,7 +240,7 @@ class AppreciationDialog extends StatelessWidget {
                       label: const FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          'শেয়ার করুন',
+                          'Share',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
                         ),
                       ),
@@ -264,7 +264,7 @@ class AppreciationDialog extends StatelessWidget {
                 label: const FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    'WhatsApp-এ সম্মাননা বার্তা পাঠান',
+                    'Send via WhatsApp',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
                   ),
                 ),
