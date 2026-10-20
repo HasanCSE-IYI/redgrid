@@ -143,10 +143,10 @@ class Strings {
   static const developedBy = 'Developed by Bhuiyan Ghazi';
   static const devPhone = '01727328200';
   static const devWhatsappMessage =
-      'আসসালামু আলাইকুম, RedGrid প্রজেক্টের উন্নয়ন ও পরিচালনায় সহায়তা প্রসঙ্গে যোগাযোগ করছি।';
-  static const sadaqahSupportTitle = 'জীবনরক্ষাকারী উদ্যোগে সহায়তা ও অনুদান';
+      'আসসালামু আলাইকুম, RedGrid প্রজেক্টে সাপোর্ট দেওয়া প্রসঙ্গে যোগাযোগ করছি।';
+  static const sadaqahSupportTitle = 'প্রজেক্টে সাপোর্ট করুন';
   static const sadaqahSupportDesc =
-      'জরুরি মুহূর্তে রক্ত সন্ধান সহজ করে মানুষের জীবন বাঁচাতে এই প্রজেক্টটি বিনামূল্যে উন্মুক্ত রাখা হয়েছে। এর নিরবচ্ছিন্ন সেবা, সার্ভার ও ধারাবাহিক পরিচালনায় আপনিও স্বেচ্ছাসেবী সহায়তা ও অনুদান দিয়ে পাশে থাকতে পারেন।';
+      'জরুরি প্রয়োজনে রক্ত সন্ধান সহজ করে মানুষের জীবন বাঁচাতে RedGrid সম্পূর্ণ বিনামূল্যে উন্মুক্ত রাখা হয়েছে। অ্যাপটির নিরবচ্ছিন্ন সেবা, সার্ভার খরচ ও ধারাবাহিক উন্নয়নে আপনিও সাপোর্ট দিয়ে পাশে থাকতে পারেন।';
   static const supportedChannels = 'WhatsApp • বিকাশ • নগদ • সেলফিন';
   static const copyNumber = 'নম্বর কপি';
   static const numberCopied = 'নম্বর কপি করা হয়েছে: 01727328200';

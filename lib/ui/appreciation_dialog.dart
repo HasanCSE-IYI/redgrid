@@ -9,7 +9,6 @@ import '../data/donor.dart';
 import '../domain/milestones.dart';
 import '../services/contact_service.dart';
 import 'blood_widgets.dart';
-import 'brand_icons.dart';
 
 /// রক্তদাতাকে সম্মাননা ও ধন্যবাদ জানানোর জন্য মার্জিত প্রিভিউ ডায়ালগ।
 class AppreciationDialog extends StatelessWidget {
@@ -261,7 +260,7 @@ class AppreciationDialog extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 11),
                   elevation: 0,
                 ),
-                icon: BrandIcon.whatsapp(size: 19),
+                icon: const Icon(Icons.chat_bubble_rounded, size: 18),
                 label: const FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(

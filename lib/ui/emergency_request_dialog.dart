@@ -10,7 +10,6 @@ import '../core/strings_bn.dart';
 import '../providers.dart';
 import '../services/contact_service.dart';
 import 'blood_widgets.dart';
-import 'brand_icons.dart';
 
 /// জরুরি রক্তের আবেদনের জন্য পোস্ট প্রস্তুতকরণ ও সামঞ্জস্যপূর্ণ ডোনার খোঁজার ডায়ালগ।
 class EmergencyRequestDialog extends ConsumerStatefulWidget {
@@ -511,32 +510,22 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                           ),
                           const Spacer(),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(4),
                               border: Border.all(
                                 color: theme.colorScheme.primary.withValues(alpha: 0.2),
                                 width: 0.8,
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                BrandIcon.facebook(size: 13),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  'Facebook',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                                ),
-                                const SizedBox(width: 6),
-                                BrandIcon.whatsapp(size: 13),
-                                const SizedBox(width: 4),
-                                const Text(
-                                  'WhatsApp',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                                ),
-                              ],
+                            child: Text(
+                              'Facebook • WhatsApp',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.primary,
+                              ),
                             ),
                           ),
                         ],
@@ -563,12 +552,12 @@ class _EmergencyRequestDialogState extends ConsumerState<EmergencyRequestDialog>
                       child: FilledButton.icon(
                         onPressed: _shareWhatsApp,
                         style: FilledButton.styleFrom(
-                          backgroundColor: BrandIcon.whatsappGreen,
+                          backgroundColor: const Color(0xFF25D366),
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                         ),
-                        icon: BrandIcon.whatsapp(size: 17),
+                        icon: const Icon(Icons.chat_bubble_rounded, size: 16),
                         label: const FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(

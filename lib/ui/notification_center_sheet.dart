@@ -10,7 +10,6 @@ import '../core/strings_bn.dart';
 import '../domain/app_notification.dart';
 import '../providers.dart';
 import '../services/contact_service.dart';
-import 'brand_icons.dart';
 import 'donor_details_sheet.dart';
 
 /// বিজ্ঞপ্তিসমূহ ও সিস্টেম অ্যালার্ট দেখার মডাল বটম শিট
@@ -451,7 +450,7 @@ class _NotificationCard extends ConsumerWidget {
                           message: msg,
                         );
                       },
-                      icon: BrandIcon.whatsapp(size: 15),
+                      icon: const Icon(Icons.chat_bubble_outline_rounded, size: 15),
                       label: const Text(Strings.whatsappAction, style: TextStyle(fontSize: 12)),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

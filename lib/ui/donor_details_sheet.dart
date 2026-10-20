@@ -10,7 +10,6 @@ import '../data/donor.dart';
 import '../providers.dart';
 import 'appreciation_dialog.dart';
 import 'blood_widgets.dart';
-import 'brand_icons.dart';
 
 /// বাংলা মাসের নাম দিয়ে পূর্ণাঙ্গ তারিখ ফরম্যাট (যেমন: ১৯ অক্টোবর, ২০২৬)
 String _formatFullDateBn(String isoDate) {
@@ -365,7 +364,7 @@ class _DonorDetailsSheetState extends ConsumerState<DonorDetailsSheet> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         elevation: 0,
                       ),
-                      icon: BrandIcon.whatsapp(size: 17),
+                      icon: const Icon(Icons.chat_bubble_rounded, size: 16),
                       label: const FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(

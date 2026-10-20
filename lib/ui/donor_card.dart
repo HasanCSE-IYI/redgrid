@@ -9,7 +9,6 @@ import '../domain/eligibility.dart';
 import '../domain/milestones.dart';
 import '../providers.dart';
 import 'blood_widgets.dart';
-import 'brand_icons.dart';
 import 'donor_details_sheet.dart';
 import 'donor_form_screen.dart';
 
@@ -219,7 +218,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                 ),
                 IconButton(
                   tooltip: Strings.whatsapp,
-                  icon: BrandIcon.whatsapp(size: 20),
+                  icon: const Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF25D366), size: 19),
                   visualDensity: VisualDensity.compact,
                   onPressed: _whatsapp,
                 ),
@@ -402,7 +401,7 @@ class _DonorCardState extends ConsumerState<DonorCard> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       visualDensity: VisualDensity.compact,
                     ),
-                    icon: BrandIcon.whatsapp(size: 19),
+                    icon: const Icon(Icons.chat_bubble_rounded, size: 17),
                     onPressed: () {
                       HapticFeedback.lightImpact();
                       _whatsapp();

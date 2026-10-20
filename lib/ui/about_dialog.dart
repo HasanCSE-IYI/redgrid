@@ -4,7 +4,6 @@ import '../app.dart';
 import '../core/strings_bn.dart';
 import '../services/contact_service.dart';
 import 'blood_widgets.dart';
-import 'brand_icons.dart';
 
 /// কাস্টম 'সম্পর্কে' ডায়ালগ (লাইসেন্স ছাড়া, ডেভেলপার ও প্রজেক্ট সাপোর্ট কার্ডসহ)।
 class AboutAppDialog extends StatelessWidget {
@@ -257,34 +256,34 @@ class AboutAppDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
 
-                    // Badges (WhatsApp, bKash, Nagad, CellFin) with authentic brand logos
+                    // Badges (WhatsApp, bKash, Nagad, CellFin)
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       alignment: WrapAlignment.center,
                       children: [
-                        _buildBrandBadge(
-                          icon: BrandIcon.whatsapp(size: 14),
+                        _buildBadge(
+                          icon: Icons.chat_rounded,
                           label: 'WhatsApp',
-                          color: BrandIcon.whatsappGreen,
+                          color: const Color(0xFF25D366),
                           isDark: isDark,
                         ),
-                        _buildBrandBadge(
-                          icon: BrandIcon.bkash(size: 14),
+                        _buildBadge(
+                          icon: Icons.account_balance_wallet_rounded,
                           label: 'বিকাশ (bKash)',
-                          color: BrandIcon.bkashPink,
+                          color: const Color(0xFFE2136E),
                           isDark: isDark,
                         ),
-                        _buildBrandBadge(
-                          icon: BrandIcon.nagad(size: 14),
+                        _buildBadge(
+                          icon: Icons.monetization_on_rounded,
                           label: 'নগদ (Nagad)',
-                          color: BrandIcon.nagadOrange,
+                          color: const Color(0xFFF7941D),
                           isDark: isDark,
                         ),
-                        _buildBrandBadge(
-                          icon: BrandIcon.cellfin(size: 14),
+                        _buildBadge(
+                          icon: Icons.account_balance_rounded,
                           label: 'সেলফিন (CellFin)',
-                          color: BrandIcon.cellfinBlue,
+                          color: const Color(0xFF0072BC),
                           isDark: isDark,
                         ),
                       ],
@@ -315,12 +314,12 @@ class AboutAppDialog extends StatelessWidget {
                         Expanded(
                           child: FilledButton.icon(
                             style: FilledButton.styleFrom(
-                              backgroundColor: BrandIcon.whatsappGreen,
+                              backgroundColor: const Color(0xFF25D366),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
-                            icon: BrandIcon.whatsapp(size: 16),
+                            icon: const Icon(Icons.chat_bubble_rounded, size: 16),
                             label: const Text(
                               'WhatsApp',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
@@ -371,8 +370,8 @@ class AboutAppDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildBrandBadge({
-    required Widget icon,
+  Widget _buildBadge({
+    required IconData icon,
     required String label,
     required Color color,
     required bool isDark,
@@ -389,8 +388,8 @@ class AboutAppDialog extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          icon,
-          const SizedBox(width: 5),
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(

@@ -10,8 +10,8 @@ void main() {
 
     test('contains correct phone number and initiative support', () {
       expect(Strings.devPhone, '01727328200');
-      expect(Strings.sadaqahSupportTitle, 'জীবনরক্ষাকারী উদ্যোগে সহায়তা ও অনুদান');
-      expect(Strings.sadaqahSupportDesc, contains('সহায়তা'));
+      expect(Strings.sadaqahSupportTitle, 'প্রজেক্টে সাপোর্ট করুন');
+      expect(Strings.sadaqahSupportDesc, contains('সাপোর্ট'));
     });
 
     test('dev phone formats correctly for WhatsApp international URL', () {
