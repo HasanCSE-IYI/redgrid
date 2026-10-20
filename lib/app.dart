@@ -27,8 +27,8 @@ class RedGridApp extends StatelessWidget {
 
     return ThemeData(
       useMaterial3: true,
-      fontFamily: 'HindSiliguri',
-      fontFamilyFallback: const ['NotoSansBengali'],
+      fontFamily: 'NotoSansBengali',
+      fontFamilyFallback: const ['HindSiliguri'],
       colorScheme: colorScheme,
       scaffoldBackgroundColor: isDark ? const Color(0xFF0F1216) : const Color(0xFFF8F9FA),
       appBarTheme: AppBarTheme(
@@ -38,8 +38,8 @@ class RedGridApp extends StatelessWidget {
         backgroundColor: isDark ? const Color(0xFF151921) : Colors.white,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: TextStyle(
-          fontFamily: 'HindSiliguri',
-          fontFamilyFallback: const ['NotoSansBengali'],
+          fontFamily: 'NotoSansBengali',
+          fontFamilyFallback: const ['HindSiliguri'],
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: isDark ? Colors.white : const Color(0xFF0F172A),
